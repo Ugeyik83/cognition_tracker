@@ -249,12 +249,16 @@ progressTimer = setInterval(() => {{
 // İlk uyaran
 scheduleNext();
 
-// Klavye
-document.addEventListener('keydown', e => {{
-  if (e.code === 'Space') {{ e.preventDefault(); handleRespond(); }}
-}});
+// Klavye — window seviyesinde, focus garantili
+window.addEventListener('keydown', e => {{
+  if (e.code === 'Space' || e.key === ' ') {{ e.preventDefault(); e.stopPropagation(); handleRespond(); }}
+}}, true);
 // Tıklama (mobil / fare)
-document.addEventListener('click', handleRespond);
+window.addEventListener('click', handleRespond);
+// iframe otomatik focus
+window.focus();
+document.body.setAttribute('tabindex', '0');
+document.body.focus();
 </script>
 </body>
 </html>
@@ -482,10 +486,13 @@ fixEl.style.display  = 'flex';
 stimEl.style.display = 'none';
 requestAnimationFrame(tick);
 
-document.addEventListener('keydown', e => {{
-  if (e.code === 'Space') {{ e.preventDefault(); handleRespond(); }}
-}});
-document.addEventListener('click', handleRespond);
+window.addEventListener('keydown', e => {{
+  if (e.code === 'Space' || e.key === ' ') {{ e.preventDefault(); e.stopPropagation(); handleRespond(); }}
+}}, true);
+window.addEventListener('click', handleRespond);
+window.focus();
+document.body.setAttribute('tabindex', '0');
+document.body.focus();
 </script>
 </body>
 </html>
@@ -747,12 +754,15 @@ function finishTest() {{
   doneMsg.style.display = 'block';
 }}
 
-// Klavye
-document.addEventListener('keydown', e => {{
-  if (e.code === 'Space') {{ e.preventDefault(); handlePrimary(); }}
+// Klavye — window seviyesinde, focus garantili
+window.addEventListener('keydown', e => {{
+  if (e.code === 'Space' || e.key === ' ') {{ e.preventDefault(); e.stopPropagation(); handlePrimary(); }}
   if (e.key === 'd' || e.key === 'D') handleSecondary('d');
   if (e.key === 'k' || e.key === 'K') handleSecondary('k');
-}});
+}}, true);
+window.focus();
+document.body.setAttribute('tabindex', '0');
+document.body.focus();
 
 scheduleNextPrimary(performance.now());
 requestAnimationFrame(tick);
