@@ -48,7 +48,7 @@ if not ready:
 # localStorage'a yazdığında (test bitince) kullanıcı sayfayı
 # yenileyebilir VEYA aşağıdaki buton ile sonucu alır.
 components.html(
-    pvt_component(duration_ms=180_000, min_isi_ms=2000,
+    pvt_component(duration_ms=30_000, min_isi_ms=2000,
                   max_isi_ms=8000, lapse_threshold_ms=500),
     height=560, scrolling=False,
 )
@@ -58,7 +58,7 @@ st.info("⏳ Test devam ediyor. Bitince **'Sonucu Al'** butonuna basın.")
 # Tek tetikleyici: kullanıcının manuel butonu.
 # Böylece test sırasında hiç rerun olmaz.
 if st.button("✅ Test bitti — Sonucu Al", type="primary"):
-    raw = st_javascript("window.top.localStorage.getItem('pvt_result')")
+    raw = st_javascript("""(function(){var v=null;try{v=window.top.localStorage.getItem('pvt_result');}catch(e){}if(!v){try{v=window.parent.localStorage.getItem('pvt_result');}catch(e){}}if(!v){try{v=localStorage.getItem('pvt_result');}catch(e){}}return v;})()""")
     if raw and raw not in ("null", "undefined", None):
         try:
             data    = json.loads(raw)
@@ -70,7 +70,7 @@ if st.button("✅ Test bitti — Sonucu Al", type="primary"):
                 "false_starts": summary.get("false_starts"),
                 "n_trials":     summary.get("n_trials"),
             }
-            st_javascript("window.top.localStorage.removeItem('pvt_result')")
+            st_javascript("""(function(){try{window.top.localStorage.removeItem('pvt_result');}catch(e){}try{window.parent.localStorage.removeItem('pvt_result');}catch(e){}try{localStorage.removeItem('pvt_result');}catch(e){}})()""")
             st.rerun()
         except (json.JSONDecodeError, TypeError):
             st.error("Sonuç okunamadı. Test gerçekten tamamlandı mı?")

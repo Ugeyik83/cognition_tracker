@@ -60,7 +60,7 @@ if not ready:
     st.stop()
 
 components.html(
-    dual_task_component(duration_ms=90_000, shape_interval_min_ms=2000,
+    dual_task_component(duration_ms=30_000, shape_interval_min_ms=2000,
                         shape_interval_max_ms=4500, shape_duration_ms=1500),
     height=600, scrolling=False,
 )
@@ -68,7 +68,7 @@ components.html(
 st.info("⏳ Test devam ediyor. Bitince **'Sonucu Al'** butonuna basın.")
 
 if st.button("✅ Test bitti — Sonucu Al", type="primary"):
-    raw = st_javascript("window.top.localStorage.getItem('dual_result')")
+    raw = st_javascript("""(function(){var v=null;try{v=window.top.localStorage.getItem('dual_result');}catch(e){}if(!v){try{v=window.parent.localStorage.getItem('dual_result');}catch(e){}}if(!v){try{v=localStorage.getItem('dual_result');}catch(e){}}return v;})()""")
     if raw and raw not in ("null", "undefined", None):
         try:
             data    = json.loads(raw)
@@ -79,7 +79,7 @@ if st.button("✅ Test bitti — Sonucu Al", type="primary"):
                 "primary_correct":    summary.get("primary_correct"),
                 "secondary_correct":  summary.get("secondary_correct"),
             }
-            st_javascript("window.top.localStorage.removeItem('dual_result')")
+            st_javascript("""(function(){try{window.top.localStorage.removeItem('dual_result');}catch(e){}try{window.parent.localStorage.removeItem('dual_result');}catch(e){}try{localStorage.removeItem('dual_result');}catch(e){}})()""")
             st.rerun()
         except (json.JSONDecodeError, TypeError):
             st.error("Sonuç okunamadı. Test gerçekten tamamlandı mı?")

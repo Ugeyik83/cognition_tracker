@@ -40,14 +40,14 @@ if not ready:
     st.stop()
 
 components.html(
-    gonogo_component(n_trials=60, go_ratio=0.75, stim_ms=800, isi_ms=1200),
+    gonogo_component(n_trials=10, go_ratio=0.75, stim_ms=800, isi_ms=1200),
     height=560, scrolling=False,
 )
 
 st.info("⏳ Test devam ediyor. Bitince **'Sonucu Al'** butonuna basın.")
 
 if st.button("✅ Test bitti — Sonucu Al", type="primary"):
-    raw = st_javascript("window.top.localStorage.getItem('gonogo_result')")
+    raw = st_javascript("""(function(){var v=null;try{v=window.top.localStorage.getItem('gonogo_result');}catch(e){}if(!v){try{v=window.parent.localStorage.getItem('gonogo_result');}catch(e){}}if(!v){try{v=localStorage.getItem('gonogo_result');}catch(e){}}return v;})()""")
     if raw and raw not in ("null", "undefined", None):
         try:
             data    = json.loads(raw)
@@ -61,7 +61,7 @@ if st.button("✅ Test bitti — Sonucu Al", type="primary"):
                 "n_go":             summary.get("n_go"),
                 "n_nogo":           summary.get("n_nogo"),
             }
-            st_javascript("window.top.localStorage.removeItem('gonogo_result')")
+            st_javascript("""(function(){try{window.top.localStorage.removeItem('gonogo_result');}catch(e){}try{window.parent.localStorage.removeItem('gonogo_result');}catch(e){}try{localStorage.removeItem('gonogo_result');}catch(e){}})()""")
             st.rerun()
         except (json.JSONDecodeError, TypeError):
             st.error("Sonuç okunamadı. Test gerçekten tamamlandı mı?")

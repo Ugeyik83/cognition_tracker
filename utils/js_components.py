@@ -231,7 +231,9 @@ function finishTest() {{
 
   // Streamlit'e gönder
   window.parent.postMessage({{ type: 'pvt_done', payload }}, '*');
-  window.top.localStorage.setItem('pvt_result', payload);
+  try {{ window.top.localStorage.setItem('pvt_result', payload); }} catch(e) {{}}
+  try {{ window.parent.localStorage.setItem('pvt_result', payload); }} catch(e) {{}}
+  try {{ localStorage.setItem('pvt_result', payload); }} catch(e) {{}}
 
   instruction.style.display = 'none';
   doneMsg.style.display     = 'block';
@@ -412,7 +414,9 @@ function finishTest() {{
   const payload = JSON.stringify({{ results, summary }});
   document.getElementById('result').value = payload;
   window.parent.postMessage({{ type: 'gonogo_done', payload }}, '*');
-  window.top.localStorage.setItem('gonogo_result', payload);
+  try {{ window.top.localStorage.setItem('gonogo_result', payload); }} catch(e) {{}}
+  try {{ window.parent.localStorage.setItem('gonogo_result', payload); }} catch(e) {{}}
+  try {{ localStorage.setItem('gonogo_result', payload); }} catch(e) {{}}
   doneMsg.style.display = 'block';
 }}
 
@@ -750,7 +754,9 @@ function finishTest() {{
   const payload = JSON.stringify({{ summary }});
   document.getElementById('result').value = payload;
   window.parent.postMessage({{ type: 'dual_done', payload }}, '*');
-  window.top.localStorage.setItem('dual_result', payload);
+  try {{ window.top.localStorage.setItem('dual_result', payload); }} catch(e) {{}}
+  try {{ window.parent.localStorage.setItem('dual_result', payload); }} catch(e) {{}}
+  try {{ localStorage.setItem('dual_result', payload); }} catch(e) {{}}
   doneMsg.style.display = 'block';
 }}
 
