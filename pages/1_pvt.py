@@ -6,14 +6,14 @@ import json
 st.set_page_config(page_title="PVT Testi", layout="centered")
 st.title("🧠 Psikomotor Vigilans Testi (PVT)")
 
-# --- Sidebar: yeni test butonu ---
+# Sidebar: yeni test butonu
 with st.sidebar:
     if st.button("🔄 Yeni Test Başlat", use_container_width=True):
         if "pvt_result" in st.session_state:
             del st.session_state["pvt_result"]
         st.rerun()
 
-# --- Eğer sonuç varsa, hemen göster ve alt kısmı pasif yap ---
+# Eğer sonuç zaten varsa, direkt göster ve test arayüzünü gizle
 if st.session_state.get("pvt_result"):
     final = st.session_state["pvt_result"]
     st.success("### 🎯 Son Test Sonucunuz")
@@ -21,8 +21,7 @@ if st.session_state.get("pvt_result"):
     col1.metric("Ortalama Tepki Süresi", f"{final.get('average', '?')} ms")
     col2.metric("Deneme Sayısı", len(final.get('reactionTimes', [])))
     st.line_chart(final['reactionTimes'], x_label="Deneme", y_label="Tepki Süresi (ms)")
-    # Sonuç varken test arayüzünü göstermeye gerek yok
-    st.stop()
+    st.stop()  # test arayüzünü gösterme
 
 # --- JavaScript bileşeni (oyun + gizli textarea) ---
 components.html(
@@ -153,7 +152,7 @@ components.html(
     height=550,
 )
 
-# --- Gizli textarea (Streamlit tarafında) ---
+# Gizli textarea (Streamlit tarafında)
 with st.container():
     result_json = st.text_area(
         "###",
@@ -172,16 +171,16 @@ with st.container():
         unsafe_allow_html=True
     )
 
-# --- Sonuç gelince session_state'e yaz ve sayfayı yenile ---
+# Sonuç gelince session_state'e yaz (rerun yok, hemen sonuçlar gösterilecek)
 if result_json:
     try:
         data = json.loads(result_json)
         st.session_state["pvt_result"] = data
-        # Sayfayı yenile (sonuçların gösterilmesi için)
-        st.rerun()
+        st.success("✅ PVT sonucu kaydedildi!")
+        # Sayfa yeniden çalışacak (rerun gerekmez, üstteki if bloğu sonuçları hemen gösterir)
     except Exception as e:
         st.error(f"Sonuç işlenirken hata: {e}")
 
-# Eğer sonuç yoksa, kullanıcıya bilgi ver
+# Eğer sonuç yoksa bilgi ver
 if not st.session_state.get("pvt_result"):
     st.info("Testi başlatmak için yukarıdaki butona tıklayın. 5 başarılı tepki sonucunda otomatik olarak kaydedilecektir.")
