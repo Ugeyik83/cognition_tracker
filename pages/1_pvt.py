@@ -13,12 +13,16 @@ with st.sidebar:
             del st.session_state["pvt_result"]
         st.rerun()
 
-# --- Önceki sonuç varsa göster ---
+# --- Eğer sonuç varsa, hemen göster ve alt kısmı pasif yap ---
 if st.session_state.get("pvt_result"):
-    prev = st.session_state["pvt_result"]
-    with st.expander("📊 Önceki test sonucunuz", expanded=False):
-        st.metric("Ortalama Tepki Süresi", f"{prev.get('average', '?')} ms")
-        st.write("Tüm tepkiler:", prev.get('reactionTimes', []))
+    final = st.session_state["pvt_result"]
+    st.success("### 🎯 Son Test Sonucunuz")
+    col1, col2 = st.columns(2)
+    col1.metric("Ortalama Tepki Süresi", f"{final.get('average', '?')} ms")
+    col2.metric("Deneme Sayısı", len(final.get('reactionTimes', [])))
+    st.line_chart(final['reactionTimes'], x_label="Deneme", y_label="Tepki Süresi (ms)")
+    # Sonuç varken test arayüzünü göstermeye gerek yok
+    st.stop()
 
 # --- JavaScript bileşeni (oyun + gizli textarea) ---
 components.html(
@@ -38,7 +42,6 @@ components.html(
             <div id="progress" style="margin-top: 20px; font-size: 14px; color: gray;"></div>
         </div>
     </div>
-    <!-- Gizli textarea: sonuçları Streamlit'e iletmek için -->
     <textarea id="resultData" style="display:none;"></textarea>
 
     <script>
@@ -122,10 +125,6 @@ components.html(
                 setTimeout(() => {
                     if (testActive) waitForStimulus();
                 }, 1500);
-            } else {
-                if (!testActive) {
-                    statusDiv.innerHTML = "🟢 Test başlamamış. Başlatmak için butona tıklayın.";
-                }
             }
         }
         
@@ -154,7 +153,7 @@ components.html(
     height=550,
 )
 
-# --- Gizli textarea (Streamlit tarafında) sonuçları yakalamak için ---
+# --- Gizli textarea (Streamlit tarafında) ---
 with st.container():
     result_json = st.text_area(
         "###",
@@ -173,27 +172,16 @@ with st.container():
         unsafe_allow_html=True
     )
 
-# --- Gelen sonucu session_state'e yaz ---
+# --- Sonuç gelince session_state'e yaz ve sayfayı yenile ---
 if result_json:
     try:
         data = json.loads(result_json)
         st.session_state["pvt_result"] = data
-        st.success("✅ PVT sonucu kaydedildi! Şimdi Dashboard'a gidebilirsiniz.")
-        # Debug: session_state içeriğini göster (isteğe bağlı)
-        with st.expander("🔍 Debug: session_state içeriği (geçici)"):
-            st.json(st.session_state.get("pvt_result"))
-        # Sayfayı yenile ki artık sonuç gösterilsin
+        # Sayfayı yenile (sonuçların gösterilmesi için)
         st.rerun()
     except Exception as e:
         st.error(f"Sonuç işlenirken hata: {e}")
 
-# --- Mevcut sonucu göster (eğer session_state'de varsa) ---
-if st.session_state.get("pvt_result"):
-    final = st.session_state["pvt_result"]
-    st.success("### 🎯 Son Test Sonucunuz")
-    col1, col2 = st.columns(2)
-    col1.metric("Ortalama Tepki Süresi", f"{final['average']} ms")
-    col2.metric("Deneme Sayısı", len(final['reactionTimes']))
-    st.line_chart(final['reactionTimes'], x_label="Deneme", y_label="Tepki Süresi (ms)")
-else:
-    st.info("Testi başlatmak için yukarıdaki butona tıklayın. Test bittiğinde sonuçlar otomatik görünecektir.")
+# Eğer sonuç yoksa, kullanıcıya bilgi ver
+if not st.session_state.get("pvt_result"):
+    st.info("Testi başlatmak için yukarıdaki butona tıklayın. 5 başarılı tepki sonucunda otomatik olarak kaydedilecektir.")
