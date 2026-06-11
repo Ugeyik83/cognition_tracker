@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-st.markdown(BASE_CSS, unsafe_allow_html=True)
+st.html(BASE_CSS)
 render_nav("home")
 
 INITIAL_STATE = {

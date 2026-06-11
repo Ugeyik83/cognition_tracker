@@ -1,4 +1,3 @@
-import streamlit.components.v1
 """
 pages/2_go_nogo.py — Go/No-Go testi, yeni tasarım.
 """
@@ -6,6 +5,7 @@ pages/2_go_nogo.py — Go/No-Go testi, yeni tasarım.
 import json
 import streamlit as st
 
+import streamlit.components.v1
 from streamlit_javascript import st_javascript
 from utils.js_components import gonogo_component
 from utils.styles import BASE_CSS, page_header, metric_card
@@ -13,14 +13,14 @@ from utils.nav import render_nav
 
 st.set_page_config(page_title="Go/No-Go | CognitionTracker", layout="wide",
                    initial_sidebar_state="expanded")
-st.markdown(BASE_CSS, unsafe_allow_html=True)
+st.html(BASE_CSS)
 render_nav("gonogo")
 
 if not st.session_state.get("candidate_id"):
     st.warning("Önce ana sayfadan Operatör ID girin.")
     st.stop()
 
-st.markdown(page_header("Modül 2 — Go / No-Go",
+st.html(page_header("Modül 2 — Go / No-Go",
                          f"Aday: {st.session_state.candidate_id}"),
             unsafe_allow_html=True)
 
@@ -49,12 +49,9 @@ if st.session_state.get("gonogo_result"):
         <div style="display:flex;gap:12px">
     """)
 
-    st.markdown(
-        metric_card("HIT RATE",    f"{hr:.0%}", hr_color) +
+    st.html(metric_card("HIT RATE",    f"{hr:.0%}", hr_color) +
         metric_card("FALSE ALARM", f"{fa:.0%}", fa_color) +
-        metric_card("d-prime",     f"{dp:.2f}", dp_color),
-        unsafe_allow_html=True,
-    )
+        metric_card("d-prime",     f"{dp:.2f}", dp_color))
     st.html("</div></div>")
 
     if st.button("Tekrar yap"):

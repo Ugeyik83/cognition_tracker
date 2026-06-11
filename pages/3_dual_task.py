@@ -1,4 +1,3 @@
-import streamlit.components.v1
 """
 pages/3_dual_task.py — Dual Task testi, yeni tasarım.
 """
@@ -6,6 +5,7 @@ pages/3_dual_task.py — Dual Task testi, yeni tasarım.
 import json
 import streamlit as st
 
+import streamlit.components.v1
 from streamlit_javascript import st_javascript
 from utils.js_components import dual_task_component
 from utils.styles import BASE_CSS, page_header, metric_card
@@ -14,7 +14,7 @@ from utils.data_logger import save_session
 
 st.set_page_config(page_title="Dual Task | CognitionTracker", layout="wide",
                    initial_sidebar_state="expanded")
-st.markdown(BASE_CSS, unsafe_allow_html=True)
+st.html(BASE_CSS)
 render_nav("dual")
 
 if not st.session_state.get("candidate_id"):
@@ -48,11 +48,8 @@ if st.session_state.get("dual_result"):
         <div style="display:flex;gap:12px">
     """)
 
-    st.markdown(
-        metric_card("BİRİNCİL GÖREV", f"{pa:.0%}", pa_color) +
-        metric_card("İKİNCİL GÖREV",  f"{sa:.0%}", sa_color),
-        unsafe_allow_html=True,
-    )
+    st.html(metric_card("BİRİNCİL GÖREV", f"{pa:.0%}", pa_color) +
+        metric_card("İKİNCİL GÖREV",  f"{sa:.0%}", sa_color))
     st.html("</div>")
 
     # CSV kaydet

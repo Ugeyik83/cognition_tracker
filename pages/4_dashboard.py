@@ -9,10 +9,10 @@ from utils.nav import render_nav
 from utils.data_logger import load_all, export_csv
 
 st.set_page_config(page_title="Dashboard | CognitionTracker", layout="wide",
-                   initial_sidebar_state="collapsed")
-st.markdown(BASE_CSS, unsafe_allow_html=True)
+                   initial_sidebar_state="expanded")
+st.html(BASE_CSS)
 render_nav("dashboard")
-st.markdown(page_header("Operatör Dashboard", "Tüm test sonuçları"), unsafe_allow_html=True)
+st.html(page_header("Operatör Dashboard", "Tüm test sonuçları"))
 
 rows = load_all()
 

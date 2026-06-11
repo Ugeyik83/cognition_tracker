@@ -1,4 +1,3 @@
-import streamlit.components.v1
 """
 pages/1_pvt.py — PVT testi, yeni tasarım.
 """
@@ -6,6 +5,7 @@ pages/1_pvt.py — PVT testi, yeni tasarım.
 import json
 import streamlit as st
 
+import streamlit.components.v1
 from streamlit_javascript import st_javascript
 from utils.js_components import pvt_component
 from utils.styles import BASE_CSS, page_header, progress_sidebar, metric_card
@@ -13,7 +13,7 @@ from utils.nav import render_nav
 
 st.set_page_config(page_title="PVT | CognitionTracker", layout="wide",
                    initial_sidebar_state="expanded")
-st.markdown(BASE_CSS, unsafe_allow_html=True)
+st.html(BASE_CSS)
 render_nav("pvt")
 
 if not st.session_state.get("candidate_id"):
@@ -49,12 +49,9 @@ if st.session_state.get("pvt_result"):
         <div style="display:flex;gap:12px">
     """)
 
-    st.markdown(
-        metric_card("ORT. RT", f"{rt} ms", rt_color) +
+    st.html(metric_card("ORT. RT", f"{rt} ms", rt_color) +
         metric_card("LAPSE",   str(lap),   lap_color) +
-        metric_card("ERKEN BASMA", str(fs), "#F0F4FF"),
-        unsafe_allow_html=True,
-    )
+        metric_card("ERKEN BASMA", str(fs), "#F0F4FF"))
     st.html("</div></div>")
 
     if st.button("Tekrar yap", use_container_width=False):
