@@ -28,7 +28,6 @@ BASE_CSS = """
 /* Streamlit chrome gizle */
 #MainMenu, footer, header { visibility: hidden; }
 .block-container { padding: 0 !important; max-width: 100% !important; }
-section[data-testid="stSidebar"] { display: none !important; }
 div[data-testid="stToolbar"] { display: none !important; }
 
 /* Genel */

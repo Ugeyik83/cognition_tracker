@@ -4,6 +4,7 @@ app.py — Karşılama ekranı ve session state başlatma.
 
 import streamlit as st
 from utils.styles import BASE_CSS, page_header
+from utils.nav import render_nav
 
 st.set_page_config(
     page_title="CognitionTracker",
@@ -13,6 +14,7 @@ st.set_page_config(
 )
 
 st.markdown(BASE_CSS, unsafe_allow_html=True)
+render_nav("home")
 
 INITIAL_STATE = {
     "candidate_id":  "",

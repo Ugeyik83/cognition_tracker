@@ -8,10 +8,12 @@ import streamlit.components.v1 as components
 from streamlit_javascript import st_javascript
 from utils.js_components import gonogo_component
 from utils.styles import BASE_CSS, page_header, metric_card
+from utils.nav import render_nav
 
 st.set_page_config(page_title="Go/No-Go | CognitionTracker", layout="wide",
                    initial_sidebar_state="collapsed")
 st.markdown(BASE_CSS, unsafe_allow_html=True)
+render_nav("gonogo")
 
 if not st.session_state.get("candidate_id"):
     st.warning("Önce ana sayfadan Operatör ID girin.")

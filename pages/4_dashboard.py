@@ -5,11 +5,13 @@ pages/4_dashboard.py — Dashboard, yeni tasarım.
 import pandas as pd
 import streamlit as st
 from utils.styles import BASE_CSS, page_header, verdict_badge
+from utils.nav import render_nav
 from utils.data_logger import load_all, export_csv
 
 st.set_page_config(page_title="Dashboard | CognitionTracker", layout="wide",
                    initial_sidebar_state="collapsed")
 st.markdown(BASE_CSS, unsafe_allow_html=True)
+render_nav("dashboard")
 st.markdown(page_header("Operatör Dashboard", "Tüm test sonuçları"), unsafe_allow_html=True)
 
 rows = load_all()
