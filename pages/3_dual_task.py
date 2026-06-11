@@ -21,9 +21,8 @@ if not st.session_state.get("candidate_id"):
     st.warning("Önce ana sayfadan Operatör ID girin.")
     st.stop()
 
-st.markdown(page_header("Modül 3 — Çift Görev (Dual Task)",
-                         f"Aday: {st.session_state.candidate_id}"),
-            unsafe_allow_html=True)
+st.html(page_header("Modül 3 — Çift Görev (Dual Task)",
+                         f"Aday: {st.session_state.candidate_id}"))
 
 if st.session_state.get("dual_result"):
     r = st.session_state["dual_result"]
@@ -95,10 +94,10 @@ ready = st.checkbox("Talimatları okudum, hazırım.")
 if not ready:
     st.stop()
 
-st.components.v1.html(dual_task_component(duration_ms=90_000, shape_interval_min_ms=2000,
+st.components.v1.html(dual_task_component(duration_ms=30_000, shape_interval_min_ms=2000,
                         shape_interval_max_ms=4500, shape_duration_ms=1500), height=580, scrolling=False)
 
-st.markdown("""
+st.html("""
 <div style="background:rgba(61,139,255,0.06);border:1px solid rgba(61,139,255,0.15);
             border-radius:10px;padding:12px 16px;margin:12px 0;
             font-size:13px;color:#8B95B0">

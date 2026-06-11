@@ -70,9 +70,9 @@ ready = st.checkbox("Talimatları okudum, hazırım.")
 if not ready:
     st.stop()
 
-st.components.v1.html(gonogo_component(n_trials=60, go_ratio=0.75, stim_ms=800, isi_ms=1200), height=540, scrolling=False)
+st.components.v1.html(gonogo_component(n_trials=20, go_ratio=0.75, stim_ms=800, isi_ms=1200), height=540, scrolling=False)
 
-st.markdown("""
+st.html("""
 <div style="background:rgba(61,139,255,0.06);border:1px solid rgba(61,139,255,0.15);
             border-radius:10px;padding:12px 16px;margin:12px 0;
             font-size:13px;color:#8B95B0">
