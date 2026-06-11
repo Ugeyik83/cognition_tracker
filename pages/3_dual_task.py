@@ -38,24 +38,24 @@ ready = st.checkbox("Talimatları okudum ve hazırım.")
 if not ready:
     st.stop()
 
-# Dual Task bileşenini göster
+# Bileşeni göster (yüksekliği artırdım)
 components.html(dual_task_component(duration_ms=90000,
                                     shape_interval_min_ms=2000,
                                     shape_interval_max_ms=4500,
                                     shape_duration_ms=1500),
-                height=620,
+                height=650,
                 scrolling=False)
 
-# Buton: JavaScript fonksiyonunu çağır
+# Butonu ayrı bir HTML olarak ekleyelim, doğrudan streamlit üzerinde değil ama içinde JS olsun
 st.markdown("""
-<div style="display: flex; justify-content: center; margin: 10px 0;">
-    <button id="startDualTaskBtn" style="background: #4CAF50; color: white; border: none; padding: 12px 30px; font-size: 18px; border-radius: 40px; cursor: pointer;">
+<div style="display: flex; justify-content: center; margin: 16px 0;">
+    <button id="startDualTaskBtn" style="background: #4CAF50; color: white; border: none; padding: 12px 30px; font-size: 18px; border-radius: 40px; cursor: pointer; font-weight: bold;">
         🚀 Testi Başlat
     </button>
 </div>
 <script>
-    function waitForStart() {
-        var btn = document.getElementById('startDualTaskBtn');
+    (function() {
+        const btn = document.getElementById('startDualTaskBtn');
         if (btn) {
             btn.onclick = function() {
                 if (typeof window.startDualTask === 'function') {
@@ -64,17 +64,11 @@ st.markdown("""
                     btn.innerText = '⏳ Test devam ediyor...';
                     btn.style.opacity = '0.6';
                 } else {
-                    alert('Bileşen henüz yüklenmedi. Lütfen 1 saniye bekleyip tekrar deneyin.');
-                    setTimeout(waitForStart, 500);
+                    alert('Bileşen yüklenmedi. Lütfen sayfayı yenileyin.');
                 }
             };
         }
-    }
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', waitForStart);
-    } else {
-        waitForStart();
-    }
+    })();
 </script>
 """, unsafe_allow_html=True)
 
@@ -109,4 +103,4 @@ if final:
     st.progress(final.get('primary_accuracy', 0), text="Renk görevi başarısı")
     st.progress(final.get('secondary_accuracy', 0), text="Şekil görevi başarısı")
 else:
-    st.info("Testi başlatmak için yukarıdaki butona tıklayın. 90 saniye boyunca iki göreve aynı anda dikkat edin.")
+    st.info("Testi başlatmak için yukarıdaki butona tıklayın.")
