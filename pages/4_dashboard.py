@@ -2,7 +2,7 @@
 import streamlit as st
 import pandas as pd
 from utils.data_logger import load_all, export_csv
-from utils.result_handler import get_result
+
 
 st.set_page_config(page_title="Dashboard | CognitionTracker", layout="wide")
 st.title("📊 Test Sonuçları Dashboard'u")
@@ -11,7 +11,7 @@ st.title("📊 Test Sonuçları Dashboard'u")
 st.subheader("🔹 Bu Oturumdaki Sonuçlar")
 
 col1, col2, col3 = st.columns(3)
-pvt = get_result("pvt_result")
+pvt = st.session_state.get("pvt_result")
 gonogo = get_result("gonogo_result")
 dual = get_result("dual_result")
 
