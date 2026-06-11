@@ -8,27 +8,24 @@ st.title("🛑 Go/No-Go Dikkat Testi")
 
 RESULT_KEY = "gonogo_result"
 
-# Sidebar'da yeni test butonu
 with st.sidebar:
     if st.button("🔄 Yeni Test Başlat", use_container_width=True):
         clear_result(RESULT_KEY)
         st.rerun()
 
-# Önceki sonuç varsa göster (katlanır bölüm)
 previous_result = get_result(RESULT_KEY)
 if previous_result:
     with st.expander("📊 Önceki test sonucunuz", expanded=False):
         st.metric("Doğruluk Oranı", f"{previous_result['accuracy']:.1f}%")
-        st.metric("Doğru tepki", previous_result['correct'])
-        st.metric("Yanlış tepki (No-Go'ya tıklama)", previous_result['incorrect'])
+        st.metric("Doğru Tepki", previous_result['correct'])
+        st.metric("Yanlış Tepki (No-Go'ya tıklama veya Go'ya geç kalma)", previous_result['incorrect'])
 
-# Ana bileşen: oyun + gizli textarea
 components.html(
     """
     <div style="font-family: sans-serif; max-width: 550px; margin: 0 auto;">
         <div style="background: #f0f2f6; padding: 20px; border-radius: 20px; text-align: center;">
             <h3>🎯 Kural</h3>
-            <p><span style="color:green; font-weight:bold;">YEŞİL</span> kutuya <strong>tıklayın</strong>.<br>
+            <p><span style="color:green; font-weight:bold;">YEŞİL</span> kutuya <strong>tıklayın</strong> (2 saniyeniz var).<br>
             <span style="color:red; font-weight:bold;">KIRMIZI</span> kutuya <strong>tıklamayın</strong>.</p>
             
             <button id="startBtn" style="background: #4CAF50; color: white; border: none; padding: 12px 30px; font-size: 18px; border-radius: 40px; cursor: pointer; margin-bottom: 20px;">🚀 Testi Başlat</button>
@@ -37,11 +34,11 @@ components.html(
                 ?
             </div>
             
-            <div id="scoreBoard" style="font-size: 20px; margin: 10px;">✅ Doğru: 0 &nbsp;&nbsp; ❌ Yanlış: 0</div>
+            <div id="messageBox" style="margin: 10px; font-size: 16px; color: #555;">Test başlamadı</div>
+            <div id="scoreBoard" style="font-size: 20px; margin: 10px;">✅ Doğru: 0 &nbsp;&nbsp; ❌ Hata: 0</div>
             <div id="progress" style="font-size: 14px; color: gray;">Deneme: 0 / 20</div>
         </div>
     </div>
-    <!-- Gizli textarea: sonuçları Streamlit'e iletmek için -->
     <textarea id="resultData" style="display:none;"></textarea>
 
     <script>
@@ -50,16 +47,18 @@ components.html(
         let incorrect = 0;
         let trialCount = 0;
         const MAX_TRIALS = 20;
-        let currentColor = null; // 'green' veya 'red'
+        let currentColor = null;
         let timeoutId = null;
+        let waitingForReady = false;
         
         const stimulusDiv = document.getElementById('stimulusBox');
+        const messageDiv = document.getElementById('messageBox');
         const scoreSpan = document.getElementById('scoreBoard');
         const progressSpan = document.getElementById('progress');
         const hiddenTextarea = document.getElementById('resultData');
         
         function updateUI() {
-            scoreSpan.innerHTML = `✅ Doğru: ${correct} &nbsp;&nbsp; ❌ Yanlış: ${incorrect}`;
+            scoreSpan.innerHTML = `✅ Doğru: ${correct} &nbsp;&nbsp; ❌ Hata: ${incorrect}`;
             progressSpan.innerText = `Deneme: ${trialCount} / ${MAX_TRIALS}`;
         }
         
@@ -77,47 +76,69 @@ components.html(
             hiddenTextarea.dispatchEvent(new Event('change', { bubbles: true }));
             stimulusDiv.style.backgroundColor = "gray";
             stimulusDiv.innerText = "🏁 BİTTİ";
+            messageDiv.innerText = "Test tamamlandı!";
             document.getElementById('startBtn').disabled = false;
+        }
+        
+        function showReady() {
+            if (!active) return;
+            waitingForReady = true;
+            stimulusDiv.style.backgroundColor = "lightgray";
+            stimulusDiv.innerText = "⏳";
+            messageDiv.innerText = "Hazır olun...";
+            // 1 saniye sonra uyaranı göster
+            setTimeout(() => {
+                if (!active) return;
+                waitingForReady = false;
+                showStimulus();
+            }, 1000);
         }
         
         function showStimulus() {
             if (!active) return;
-            // Go (yeşil) olasılığı %70, No-Go (kırmızı) %30
-            const isGo = Math.random() < 0.7;
+            const isGo = Math.random() < 0.7; // %70 Go (yeşil)
             currentColor = isGo ? 'green' : 'red';
             stimulusDiv.style.backgroundColor = currentColor;
             stimulusDiv.innerText = isGo ? "TIKLA!" : "DOKUNMA!";
-            // 1.5 saniye sonra otomatik olarak bir sonraki uyarıya geç (eğer tıklanmazsa)
+            messageDiv.innerText = isGo ? "Tıklayın!" : "Sakın tıklamayın!";
+            // 2 saniye tepki süresi (önceki 1.5'ten daha uzun)
             timeoutId = setTimeout(() => {
                 if (active && trialCount < MAX_TRIALS) {
-                    // Cevap verilmedi -> yanlış say (No-Go'ya tıklanmadı ama Go'ya tıklanmadıysa hata)
+                    // Süre doldu, cevap yoksa
                     if (currentColor === 'green') {
-                        // Go'ya tıklanmadı -> yanlış
+                        // Go'ya tıklanmadı -> hata
                         incorrect++;
+                        messageDiv.innerText = "❌ Geç kaldınız! Hızlı olun.";
                     } else {
-                        // No-Go'ya tıklanmaması doğru, ama tıklama olmadı -> hiçbir şey ekleme
-                        // Bu durumda cevap verilmemiş sayılır, istatistiğe ekleme yapma
-                        // Fakat deneme sayısını artır.
+                        // No-Go'ya tıklanmaması doğru, ama hiçbir şey yapma
+                        messageDiv.innerText = "✓ Doğru (dokunmadınız)";
                     }
                     trialCount++;
                     updateUI();
                     if (trialCount >= MAX_TRIALS) {
                         endTest();
                     } else {
-                        showStimulus();
+                        // Bir sonraki deneme öncesi hazırlık aşaması
+                        showReady();
                     }
                 }
-            }, 1500);
+            }, 2000); // 2 saniye
         }
         
         function handleClick() {
             if (!active) return;
+            if (waitingForReady) {
+                messageDiv.innerText = "Henüz uyarı gelmedi, bekleyin!";
+                return;
+            }
             if (timeoutId) clearTimeout(timeoutId);
             
             if (currentColor === 'green') {
                 correct++;
+                messageDiv.innerText = "✅ Doğru tepki!";
             } else if (currentColor === 'red') {
                 incorrect++;
+                messageDiv.innerText = "❌ Hata! Kırmızıya tıkladınız.";
             }
             trialCount++;
             updateUI();
@@ -125,7 +146,8 @@ components.html(
             if (trialCount >= MAX_TRIALS) {
                 endTest();
             } else {
-                showStimulus();
+                // Sonraki deneme için hazırlık
+                showReady();
             }
         }
         
@@ -136,19 +158,17 @@ components.html(
             incorrect = 0;
             trialCount = 0;
             updateUI();
-            stimulusDiv.style.backgroundColor = "gray";
-            stimulusDiv.innerText = "?";
+            messageDiv.innerText = "Test başlıyor...";
             document.getElementById('startBtn').disabled = true;
-            showStimulus();
+            showReady();
         };
         
         stimulusDiv.addEventListener('click', handleClick);
     </script>
     """,
-    height=550,
+    height=600,
 )
 
-# Gizli textarea (Streamlit tarafında) – hata almamak için height=1 ve CSS ile gizleme
 with st.container():
     result_json = st.text_area(
         "###",
@@ -167,7 +187,6 @@ with st.container():
         unsafe_allow_html=True
     )
 
-# Sonuçları işle
 if result_json:
     try:
         import json
@@ -178,7 +197,6 @@ if result_json:
     except:
         pass
 
-# Sonuçları göster (varsa)
 final = get_result(RESULT_KEY)
 if final:
     st.success("### 🎯 Son Test Sonucunuz")
@@ -186,7 +204,6 @@ if final:
     col1.metric("Doğruluk Oranı", f"{final['accuracy']:.1f}%")
     col2.metric("Doğru Tepki", final['correct'])
     col3.metric("Hatalı Tepki", final['incorrect'])
-    # Basit bir bar grafiği
     st.progress(final['accuracy'] / 100, text=f"Doğruluk: %{final['accuracy']:.1f}")
 else:
-    st.info("Testi başlatmak için yukarıdaki butona tıklayın. 20 deneme sonunda sonuçlar otomatik görünecektir.")
+    st.info("Testi başlatmak için butona tıklayın. Her deneme öncesi 'Hazır olun' uyarısı gelecek, ardından yeşil veya kırmızı kutu gösterilecek. Yeşile tıklamak için 2 saniyeniz var.")
