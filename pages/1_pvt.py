@@ -1,3 +1,4 @@
+import streamlit.components.v1
 """
 pages/1_pvt.py — PVT testi, yeni tasarım.
 """
@@ -74,7 +75,7 @@ if not ready:
     st.stop()
 
 # JS bileşeni
-st.iframe(srcdoc=pvt_component(duration_ms=180_000, min_isi_ms=2000,
+st.components.v1.html(pvt_component(duration_ms=180_000, min_isi_ms=2000,
                   max_isi_ms=8000, lapse_threshold_ms=500), height=540, scrolling=False)
 
 st.markdown("""

@@ -1,3 +1,4 @@
+import streamlit.components.v1
 """
 pages/3_dual_task.py — Dual Task testi, yeni tasarım.
 """
@@ -97,7 +98,7 @@ ready = st.checkbox("Talimatları okudum, hazırım.")
 if not ready:
     st.stop()
 
-st.iframe(srcdoc=dual_task_component(duration_ms=90_000, shape_interval_min_ms=2000,
+st.components.v1.html(dual_task_component(duration_ms=90_000, shape_interval_min_ms=2000,
                         shape_interval_max_ms=4500, shape_duration_ms=1500), height=580, scrolling=False)
 
 st.markdown("""
