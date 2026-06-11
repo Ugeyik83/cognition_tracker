@@ -67,7 +67,7 @@ components.html(
     height=580, scrolling=False,
 )
 
-raw = st_javascript("localStorage.getItem('dual_result')")
+raw = st_javascript("window.top.localStorage.getItem('dual_result')")
 
 if raw and raw not in ("null", "undefined", None):
     try:
@@ -79,7 +79,7 @@ if raw and raw not in ("null", "undefined", None):
             "primary_correct":    summary.get("primary_correct"),
             "secondary_correct":  summary.get("secondary_correct"),
         }
-        st_javascript("localStorage.removeItem('dual_result')")
+        st_javascript("window.top.localStorage.removeItem('dual_result')")
         st.rerun()
     except (json.JSONDecodeError, TypeError):
         pass

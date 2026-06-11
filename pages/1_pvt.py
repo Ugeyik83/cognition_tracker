@@ -48,7 +48,7 @@ components.html(
     height=540, scrolling=False,
 )
 
-raw = st_javascript("localStorage.getItem('pvt_result')")
+raw = st_javascript("window.top.localStorage.getItem('pvt_result')")
 
 if raw and raw not in ("null", "undefined", None):
     try:
@@ -61,7 +61,7 @@ if raw and raw not in ("null", "undefined", None):
             "false_starts": summary.get("false_starts"),
             "n_trials":     summary.get("n_trials"),
         }
-        st_javascript("localStorage.removeItem('pvt_result')")
+        st_javascript("window.top.localStorage.removeItem('pvt_result')")
         st.rerun()
     except (json.JSONDecodeError, TypeError):
         pass

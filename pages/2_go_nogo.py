@@ -46,7 +46,7 @@ components.html(
     height=540, scrolling=False,
 )
 
-raw = st_javascript("localStorage.getItem('gonogo_result')")
+raw = st_javascript("window.top.localStorage.getItem('gonogo_result')")
 
 if raw and raw not in ("null", "undefined", None):
     try:
@@ -61,7 +61,7 @@ if raw and raw not in ("null", "undefined", None):
             "n_go":             summary.get("n_go"),
             "n_nogo":           summary.get("n_nogo"),
         }
-        st_javascript("localStorage.removeItem('gonogo_result')")
+        st_javascript("window.top.localStorage.removeItem('gonogo_result')")
         st.rerun()
     except (json.JSONDecodeError, TypeError):
         pass

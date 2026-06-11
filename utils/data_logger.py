@@ -6,7 +6,6 @@ Her aday için benzersiz dosya → race condition yok.
 """
 
 import csv
-import os
 from datetime import datetime
 from pathlib import Path
 

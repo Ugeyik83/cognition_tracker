@@ -231,7 +231,7 @@ function finishTest() {{
 
   // Streamlit'e gönder
   window.parent.postMessage({{ type: 'pvt_done', payload }}, '*');
-  window.parent.localStorage.setItem('pvt_result', payload);
+  window.top.localStorage.setItem('pvt_result', payload);
 
   instruction.style.display = 'none';
   doneMsg.style.display     = 'block';
@@ -408,7 +408,7 @@ function finishTest() {{
   const payload = JSON.stringify({{ results, summary }});
   document.getElementById('result').value = payload;
   window.parent.postMessage({{ type: 'gonogo_done', payload }}, '*');
-  window.parent.localStorage.setItem('gonogo_result', payload);
+  window.top.localStorage.setItem('gonogo_result', payload);
   doneMsg.style.display = 'block';
 }}
 
@@ -743,7 +743,7 @@ function finishTest() {{
   const payload = JSON.stringify({{ summary }});
   document.getElementById('result').value = payload;
   window.parent.postMessage({{ type: 'dual_done', payload }}, '*');
-  window.parent.localStorage.setItem('dual_result', payload);
+  window.top.localStorage.setItem('dual_result', payload);
   doneMsg.style.display = 'block';
 }}
 
