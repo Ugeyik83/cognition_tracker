@@ -46,7 +46,7 @@ components.html(
         let correct = 0;
         let incorrect = 0;
         let trialCount = 0;
-        const MAX_TRIALS = 20;
+        const MAX_TRIALS = 10;
         let currentColor = null;
         let timeoutId = null;
         let waitingForReady = false;
