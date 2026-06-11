@@ -94,7 +94,7 @@ ready = st.checkbox("Talimatları okudum, hazırım.")
 if not ready:
     st.stop()
 
-st.components.v1.html(dual_task_component(duration_ms=30_000, shape_interval_min_ms=2000,
+st.components.v1.html(dual_task_component(duration_ms=90_000, shape_interval_min_ms=2000,
                         shape_interval_max_ms=4500, shape_duration_ms=1500), height=580, scrolling=False)
 
 st.html("""
@@ -106,15 +106,11 @@ st.html("""
 """)
 
 if st.button("✅ Test bitti — Sonucu Al", type="primary", use_container_width=True):
-    raw = st_javascript("""(function(){
-        var v=null;
-        try{v=window.top.localStorage.getItem('dual_result');}catch(e){}
-        if(!v){try{v=window.parent.localStorage.getItem('dual_result');}catch(e){}}
-        if(!v){try{v=localStorage.getItem('dual_result');}catch(e){}}
-        return v;
-    })()""")
+    raw = st.query_params.get("dual_result", None)
     if raw and raw not in ("null", "undefined", None):
         try:
+            import urllib.parse
+            raw = urllib.parse.unquote(raw)
             data = json.loads(raw)
             s = data.get("summary", {})
             st.session_state["dual_result"] = {
@@ -123,11 +119,7 @@ if st.button("✅ Test bitti — Sonucu Al", type="primary", use_container_width
                 "primary_correct":    s.get("primary_correct"),
                 "secondary_correct":  s.get("secondary_correct"),
             }
-            st_javascript("""(function(){
-                try{window.top.localStorage.removeItem('dual_result');}catch(e){}
-                try{window.parent.localStorage.removeItem('dual_result');}catch(e){}
-                try{localStorage.removeItem('dual_result');}catch(e){}
-            })()""")
+            if "dual_result" in st.query_params: del st.query_params["dual_result"]
             st.rerun()
         except (json.JSONDecodeError, TypeError):
             st.error("Sonuç okunamadı.")

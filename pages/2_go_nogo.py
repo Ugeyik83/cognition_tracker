@@ -70,7 +70,7 @@ ready = st.checkbox("Talimatları okudum, hazırım.")
 if not ready:
     st.stop()
 
-st.components.v1.html(gonogo_component(n_trials=20, go_ratio=0.75, stim_ms=800, isi_ms=1200), height=540, scrolling=False)
+st.components.v1.html(gonogo_component(n_trials=60, go_ratio=0.75, stim_ms=800, isi_ms=1200), height=540, scrolling=False)
 
 st.html("""
 <div style="background:rgba(61,139,255,0.06);border:1px solid rgba(61,139,255,0.15);
@@ -81,15 +81,11 @@ st.html("""
 """)
 
 if st.button("✅ Test bitti — Sonucu Al", type="primary", use_container_width=True):
-    raw = st_javascript("""(function(){
-        var v=null;
-        try{v=window.top.localStorage.getItem('gonogo_result');}catch(e){}
-        if(!v){try{v=window.parent.localStorage.getItem('gonogo_result');}catch(e){}}
-        if(!v){try{v=localStorage.getItem('gonogo_result');}catch(e){}}
-        return v;
-    })()""")
+    raw = st.query_params.get("gonogo_result", None)
     if raw and raw not in ("null", "undefined", None):
         try:
+            import urllib.parse
+            raw = urllib.parse.unquote(raw)
             data = json.loads(raw)
             s = data.get("summary", {})
             st.session_state["gonogo_result"] = {
@@ -101,11 +97,7 @@ if st.button("✅ Test bitti — Sonucu Al", type="primary", use_container_width
                 "n_go":             s.get("n_go"),
                 "n_nogo":           s.get("n_nogo"),
             }
-            st_javascript("""(function(){
-                try{window.top.localStorage.removeItem('gonogo_result');}catch(e){}
-                try{window.parent.localStorage.removeItem('gonogo_result');}catch(e){}
-                try{localStorage.removeItem('gonogo_result');}catch(e){}
-            })()""")
+            if "gonogo_result" in st.query_params: del st.query_params["gonogo_result"]
             st.rerun()
         except (json.JSONDecodeError, TypeError):
             st.error("Sonuç okunamadı.")

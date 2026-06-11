@@ -231,9 +231,11 @@ function finishTest() {{
 
   // Streamlit'e gönder
   window.parent.postMessage({{ type: 'pvt_done', payload }}, '*');
-  try {{ window.top.localStorage.setItem('pvt_result', payload); }} catch(e) {{}}
-  try {{ window.parent.localStorage.setItem('pvt_result', payload); }} catch(e) {{}}
-  try {{ localStorage.setItem('pvt_result', payload); }} catch(e) {{}}
+  try {{
+    var _u = new URL(window.top.location.href);
+    _u.searchParams.set('pvt_result', encodeURIComponent(payload));
+    window.top.history.replaceState({{}},'',_u.toString());
+  }} catch(e) {{ try {{ localStorage.setItem('pvt_result', payload); }} catch(e2) {{}} }}
 
   instruction.style.display = 'none';
   doneMsg.style.display     = 'block';
@@ -414,9 +416,11 @@ function finishTest() {{
   const payload = JSON.stringify({{ results, summary }});
   document.getElementById('result').value = payload;
   window.parent.postMessage({{ type: 'gonogo_done', payload }}, '*');
-  try {{ window.top.localStorage.setItem('gonogo_result', payload); }} catch(e) {{}}
-  try {{ window.parent.localStorage.setItem('gonogo_result', payload); }} catch(e) {{}}
-  try {{ localStorage.setItem('gonogo_result', payload); }} catch(e) {{}}
+  try {{
+    var _u = new URL(window.top.location.href);
+    _u.searchParams.set('gonogo_result', encodeURIComponent(payload));
+    window.top.history.replaceState({{}},'',_u.toString());
+  }} catch(e) {{ try {{ localStorage.setItem('gonogo_result', payload); }} catch(e2) {{}} }}
   doneMsg.style.display = 'block';
 }}
 
@@ -754,9 +758,11 @@ function finishTest() {{
   const payload = JSON.stringify({{ summary }});
   document.getElementById('result').value = payload;
   window.parent.postMessage({{ type: 'dual_done', payload }}, '*');
-  try {{ window.top.localStorage.setItem('dual_result', payload); }} catch(e) {{}}
-  try {{ window.parent.localStorage.setItem('dual_result', payload); }} catch(e) {{}}
-  try {{ localStorage.setItem('dual_result', payload); }} catch(e) {{}}
+  try {{
+    var _u = new URL(window.top.location.href);
+    _u.searchParams.set('dual_result', encodeURIComponent(payload));
+    window.top.history.replaceState({{}},'',_u.toString());
+  }} catch(e) {{ try {{ localStorage.setItem('dual_result', payload); }} catch(e2) {{}} }}
   doneMsg.style.display = 'block';
 }}
 

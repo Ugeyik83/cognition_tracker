@@ -83,15 +83,11 @@ st.html("""
 """)
 
 if st.button("✅ Test bitti — Sonucu Al", type="primary", use_container_width=True):
-    raw = st_javascript("""(function(){
-        var v=null;
-        try{v=window.top.localStorage.getItem('pvt_result');}catch(e){}
-        if(!v){try{v=window.parent.localStorage.getItem('pvt_result');}catch(e){}}
-        if(!v){try{v=localStorage.getItem('pvt_result');}catch(e){}}
-        return v;
-    })()""")
+    raw = st.query_params.get("pvt_result", None)
     if raw and raw not in ("null", "undefined", None):
         try:
+            import urllib.parse
+            raw = urllib.parse.unquote(raw)
             data = json.loads(raw)
             s = data.get("summary", {})
             st.session_state["pvt_result"] = {
@@ -101,11 +97,7 @@ if st.button("✅ Test bitti — Sonucu Al", type="primary", use_container_width
                 "false_starts": s.get("false_starts"),
                 "n_trials":     s.get("n_trials"),
             }
-            st_javascript("""(function(){
-                try{window.top.localStorage.removeItem('pvt_result');}catch(e){}
-                try{window.parent.localStorage.removeItem('pvt_result');}catch(e){}
-                try{localStorage.removeItem('pvt_result');}catch(e){}
-            })()""")
+            if "pvt_result" in st.query_params: del st.query_params["pvt_result"]
             st.rerun()
         except (json.JSONDecodeError, TypeError):
             st.error("Sonuç okunamadı. Test gerçekten tamamlandı mı?")
