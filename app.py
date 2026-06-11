@@ -10,7 +10,7 @@ st.set_page_config(
     page_title="CognitionTracker",
     page_icon="🧠",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
 )
 
 st.markdown(BASE_CSS, unsafe_allow_html=True)
@@ -81,7 +81,7 @@ col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
     if not st.session_state.candidate_id:
         with st.form("candidate_form"):
-            cid = st.text_input("", placeholder="Operatör ID girin")
+            cid = st.text_input("Operatör ID", placeholder="Operatör ID girin", label_visibility="collapsed")
             submitted = st.form_submit_button("Teste Başla →", use_container_width=True)
             if submitted:
                 if cid.strip():

@@ -4,14 +4,14 @@ pages/1_pvt.py — PVT testi, yeni tasarım.
 
 import json
 import streamlit as st
-import streamlit.components.v1 as components
+
 from streamlit_javascript import st_javascript
 from utils.js_components import pvt_component
 from utils.styles import BASE_CSS, page_header, progress_sidebar, metric_card
 from utils.nav import render_nav
 
 st.set_page_config(page_title="PVT | CognitionTracker", layout="wide",
-                   initial_sidebar_state="collapsed")
+                   initial_sidebar_state="expanded")
 st.markdown(BASE_CSS, unsafe_allow_html=True)
 render_nav("pvt")
 
@@ -74,11 +74,8 @@ if not ready:
     st.stop()
 
 # JS bileşeni
-components.html(
-    pvt_component(duration_ms=180_000, min_isi_ms=2000,
-                  max_isi_ms=8000, lapse_threshold_ms=500),
-    height=540, scrolling=False,
-)
+st.iframe(srcdoc=pvt_component(duration_ms=180_000, min_isi_ms=2000,
+                  max_isi_ms=8000, lapse_threshold_ms=500), height=540, scrolling=False)
 
 st.markdown("""
 <div style="background:rgba(61,139,255,0.06);border:1px solid rgba(61,139,255,0.15);
