@@ -6,6 +6,7 @@ Her aday için benzersiz dosya → race condition yok.
 """
 
 import csv
+import pandas as pd
 from datetime import datetime
 from pathlib import Path
 
@@ -55,16 +56,28 @@ def save_session(candidate_id: str, pvt: dict, gonogo: dict, dual: dict) -> Path
     return path
 
 
-def load_all() -> list[dict]:
-    """results/ altındaki tüm CSV'leri okur, liste döndürür."""
+def load_all() -> pd.DataFrame:
+    """results/ altındaki tüm CSV'leri okur, tek bir DataFrame olarak döndürür."""
     _ensure_dir()
-    rows = []
+    all_rows = []
     for p in sorted(RESULTS_DIR.glob("*.csv")):
         try:
             with open(p, encoding="utf-8-sig") as f:
                 reader = csv.DictReader(f)
                 for row in reader:
-                    rows.append(row)
+                    all_rows.append(row)
         except Exception:
             continue
-    return rows
+    return pd.DataFrame(all_rows)
+
+
+def export_csv() -> bytes:
+    """Tüm sonuçları tek bir CSV dosyası olarak döndürür (indirme için)."""
+    df = load_all()
+    if df.empty:
+        return b""
+    # Geçici olarak bytes buffer'a yaz
+    import io
+    buffer = io.StringIO()
+    df.to_csv(buffer, index=False, encoding="utf-8-sig")
+    return buffer.getvalue().encode("utf-8-sig")
