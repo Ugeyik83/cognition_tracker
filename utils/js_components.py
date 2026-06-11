@@ -6,11 +6,14 @@ def dual_task_component(duration_ms=90000, shape_interval_min_ms=2000,
     Renk (üst) ve şekil (alt) görevlerini içeren Dual Task bileşeni.
     Sonuçları gizli bir textarea'ya yazar.
     """
+    # Sabit değerler: renk döngü aralığı 1800 ms
+    COLOR_CYCLE_INTERVAL = 1800
+    
     return f"""
     <div id="dual-task-container" style="font-family: 'Segoe UI', sans-serif; max-width: 800px; margin: 0 auto;">
         <div style="background: #1E1E2F; border-radius: 20px; padding: 20px; color: white;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
-                <div>⏱️ <span id="timer">90</span> saniye</div>
+                <div>⏱️ <span id="timer">{duration_ms // 1000}</span> saniye</div>
                 <div>🎯 Renk: <span id="primaryScore">0</span> / ?</div>
                 <div>🔷 Şekil: <span id="secondaryScore">0</span> / ?</div>
             </div>
@@ -45,7 +48,7 @@ def dual_task_component(duration_ms=90000, shape_interval_min_ms=2000,
             let primaryCorrect = 0;
             let primaryTotal = 0;
             let currentColor = null;
-            const colorCycleInterval = 1800; // ms
+            const colorCycleInterval = {COLOR_CYCLE_INTERVAL};
             let colorInterval = null;
             const colors = [
                 {{ name: "turuncu", code: "#FF8C42", isTarget: true }},
@@ -205,8 +208,8 @@ def dual_task_component(duration_ms=90000, shape_interval_min_ms=2000,
                 currentShape = null;
                 updateScores();
                 timerElem.innerText = remainingSeconds;
-                // Renk döngüsü: her 1.8 saniyede yeni renk
-                colorInterval = setInterval(() => showRandomColor(), {colorCycleInterval});
+                // Renk döngüsü
+                colorInterval = setInterval(() => showRandomColor(), colorCycleInterval);
                 // İlk rengi hemen göster
                 showRandomColor();
                 // Şekil görevini başlat
@@ -216,7 +219,7 @@ def dual_task_component(duration_ms=90000, shape_interval_min_ms=2000,
                 window.addEventListener('keydown', handleKeydown);
             }}
             
-            // Testi başlatan buton (dışarıdan tetiklenecek)
+            // Testi başlatan fonksiyonu global yap
             window.startDualTask = startTest;
         }})();
     </script>
