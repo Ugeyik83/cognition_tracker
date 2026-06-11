@@ -5,7 +5,6 @@ pages/3_dual_task.py — Dual Task Testi
 import json
 import streamlit as st
 import streamlit.components.v1 as components
-from streamlit_autorefresh import st_autorefresh
 from streamlit_javascript import st_javascript
 from utils.js_components import dual_task_component
 from utils.data_logger import save_session
@@ -53,33 +52,36 @@ with st.expander("📋 Talimatlar", expanded=True):
     - ■ Kare → **K** tuşu
 
     İki göreve **aynı anda** dikkat edin. Süre: **90 saniye**
+    Test bitince **'Sonucu Al'** butonuna basın.
     """)
 
 ready = st.checkbox("Talimatları okudum, hazırım.")
 if not ready:
     st.stop()
 
-st_autorefresh(interval=2000, key="dual_autorefresh")
-
 components.html(
     dual_task_component(duration_ms=90_000, shape_interval_min_ms=2000,
                         shape_interval_max_ms=4500, shape_duration_ms=1500),
-    height=580, scrolling=False,
+    height=600, scrolling=False,
 )
 
-raw = st_javascript("window.top.localStorage.getItem('dual_result')")
+st.info("⏳ Test devam ediyor. Bitince **'Sonucu Al'** butonuna basın.")
 
-if raw and raw not in ("null", "undefined", None):
-    try:
-        data    = json.loads(raw)
-        summary = data.get("summary", {})
-        st.session_state["dual_result"] = {
-            "primary_accuracy":   summary.get("primary_accuracy"),
-            "secondary_accuracy": summary.get("secondary_accuracy"),
-            "primary_correct":    summary.get("primary_correct"),
-            "secondary_correct":  summary.get("secondary_correct"),
-        }
-        st_javascript("window.top.localStorage.removeItem('dual_result')")
-        st.rerun()
-    except (json.JSONDecodeError, TypeError):
-        pass
+if st.button("✅ Test bitti — Sonucu Al", type="primary"):
+    raw = st_javascript("window.top.localStorage.getItem('dual_result')")
+    if raw and raw not in ("null", "undefined", None):
+        try:
+            data    = json.loads(raw)
+            summary = data.get("summary", {})
+            st.session_state["dual_result"] = {
+                "primary_accuracy":   summary.get("primary_accuracy"),
+                "secondary_accuracy": summary.get("secondary_accuracy"),
+                "primary_correct":    summary.get("primary_correct"),
+                "secondary_correct":  summary.get("secondary_correct"),
+            }
+            st_javascript("window.top.localStorage.removeItem('dual_result')")
+            st.rerun()
+        except (json.JSONDecodeError, TypeError):
+            st.error("Sonuç okunamadı. Test gerçekten tamamlandı mı?")
+    else:
+        st.warning("Henüz sonuç yok. Test bitmeden butona basmayın.")

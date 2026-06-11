@@ -1,11 +1,13 @@
 """
 pages/1_pvt.py — Psychomotor Vigilance Task
+
+Çözüm: test sırasında rerun yok, test bitince manuel buton ile sonuç alınır.
+Test sırasında hiç rerun yapılmaz → iframe sıfırlanmaz.
 """
 
 import json
 import streamlit as st
 import streamlit.components.v1 as components
-from streamlit_autorefresh import st_autorefresh
 from streamlit_javascript import st_javascript
 from utils.js_components import pvt_component
 
@@ -16,6 +18,7 @@ if not st.session_state.get("candidate_id"):
     st.warning("Önce ana sayfadan Aday ID girin.")
     st.stop()
 
+# Tamamlandıysa özet göster
 if st.session_state.get("pvt_result"):
     r = st.session_state["pvt_result"]
     st.success("✓ Bu modül tamamlandı.")
@@ -33,35 +36,43 @@ with st.expander("📋 Talimatlar", expanded=True):
     - Ekranda **sarı daire** göründüğünde **SPACE** tuşuna basın
     - Daire çıkmadan **basmayın**
     - Süre: **3 dakika** — odaklanın, ara vermeyin
+    - Test bitince sayfa otomatik güncellenir
     """)
 
 ready = st.checkbox("Talimatları okudum, hazırım.")
 if not ready:
     st.stop()
 
-# Test aktifken her 2 sn'de rerun → localStorage kontrol et
-# RT ölçümü JS'te olduğu için bu rerun'lar ölçümü etkilemez
-st_autorefresh(interval=2000, key="pvt_autorefresh")
-
+# ── Test aktifken ASLA rerun yok ──────────────────────────────
+# JS bileşeni render edilir ve kendi başına çalışır.
+# localStorage'a yazdığında (test bitince) kullanıcı sayfayı
+# yenileyebilir VEYA aşağıdaki buton ile sonucu alır.
 components.html(
-    pvt_component(duration_ms=180_000, min_isi_ms=2000, max_isi_ms=8000, lapse_threshold_ms=500),
-    height=540, scrolling=False,
+    pvt_component(duration_ms=180_000, min_isi_ms=2000,
+                  max_isi_ms=8000, lapse_threshold_ms=500),
+    height=560, scrolling=False,
 )
 
-raw = st_javascript("window.top.localStorage.getItem('pvt_result')")
+st.info("⏳ Test devam ediyor. Bitince **'Sonucu Al'** butonuna basın.")
 
-if raw and raw not in ("null", "undefined", None):
-    try:
-        data    = json.loads(raw)
-        summary = data.get("summary", {})
-        st.session_state["pvt_result"] = {
-            "mean_rt":      summary.get("mean_rt"),
-            "median_rt":    summary.get("median_rt"),
-            "lapses":       summary.get("lapses"),
-            "false_starts": summary.get("false_starts"),
-            "n_trials":     summary.get("n_trials"),
-        }
-        st_javascript("window.top.localStorage.removeItem('pvt_result')")
-        st.rerun()
-    except (json.JSONDecodeError, TypeError):
-        pass
+# Tek tetikleyici: kullanıcının manuel butonu.
+# Böylece test sırasında hiç rerun olmaz.
+if st.button("✅ Test bitti — Sonucu Al", type="primary"):
+    raw = st_javascript("window.top.localStorage.getItem('pvt_result')")
+    if raw and raw not in ("null", "undefined", None):
+        try:
+            data    = json.loads(raw)
+            summary = data.get("summary", {})
+            st.session_state["pvt_result"] = {
+                "mean_rt":      summary.get("mean_rt"),
+                "median_rt":    summary.get("median_rt"),
+                "lapses":       summary.get("lapses"),
+                "false_starts": summary.get("false_starts"),
+                "n_trials":     summary.get("n_trials"),
+            }
+            st_javascript("window.top.localStorage.removeItem('pvt_result')")
+            st.rerun()
+        except (json.JSONDecodeError, TypeError):
+            st.error("Sonuç okunamadı. Test gerçekten tamamlandı mı?")
+    else:
+        st.warning("Henüz sonuç yok. Test bitmeden butona basmayın.")

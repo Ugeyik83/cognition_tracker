@@ -5,7 +5,6 @@ pages/2_go_nogo.py — Go / No-Go Testi
 import json
 import streamlit as st
 import streamlit.components.v1 as components
-from streamlit_autorefresh import st_autorefresh
 from streamlit_javascript import st_javascript
 from utils.js_components import gonogo_component
 
@@ -33,35 +32,38 @@ with st.expander("📋 Talimatlar", expanded=True):
     - 🟢 **Yeşil daire** → **SPACE** tuşuna basın (GO)
     - 🔴 **Kırmızı daire** → **Basmayın** (NO-GO)
     - Süre: **~2 dakika** (60 deneme)
+    - Tüm denemeler bitince **'Sonucu Al'** butonuna basın
     """)
 
 ready = st.checkbox("Talimatları okudum, hazırım.")
 if not ready:
     st.stop()
 
-st_autorefresh(interval=2000, key="gng_autorefresh")
-
 components.html(
     gonogo_component(n_trials=60, go_ratio=0.75, stim_ms=800, isi_ms=1200),
-    height=540, scrolling=False,
+    height=560, scrolling=False,
 )
 
-raw = st_javascript("window.top.localStorage.getItem('gonogo_result')")
+st.info("⏳ Test devam ediyor. Bitince **'Sonucu Al'** butonuna basın.")
 
-if raw and raw not in ("null", "undefined", None):
-    try:
-        data    = json.loads(raw)
-        summary = data.get("summary", {})
-        st.session_state["gonogo_result"] = {
-            "hit_rate":         summary.get("hit_rate"),
-            "false_alarm_rate": summary.get("false_alarm_rate"),
-            "omission_rate":    summary.get("omission_rate"),
-            "dprime":           summary.get("dprime"),
-            "mean_rt_go":       summary.get("mean_rt_go"),
-            "n_go":             summary.get("n_go"),
-            "n_nogo":           summary.get("n_nogo"),
-        }
-        st_javascript("window.top.localStorage.removeItem('gonogo_result')")
-        st.rerun()
-    except (json.JSONDecodeError, TypeError):
-        pass
+if st.button("✅ Test bitti — Sonucu Al", type="primary"):
+    raw = st_javascript("window.top.localStorage.getItem('gonogo_result')")
+    if raw and raw not in ("null", "undefined", None):
+        try:
+            data    = json.loads(raw)
+            summary = data.get("summary", {})
+            st.session_state["gonogo_result"] = {
+                "hit_rate":         summary.get("hit_rate"),
+                "false_alarm_rate": summary.get("false_alarm_rate"),
+                "omission_rate":    summary.get("omission_rate"),
+                "dprime":           summary.get("dprime"),
+                "mean_rt_go":       summary.get("mean_rt_go"),
+                "n_go":             summary.get("n_go"),
+                "n_nogo":           summary.get("n_nogo"),
+            }
+            st_javascript("window.top.localStorage.removeItem('gonogo_result')")
+            st.rerun()
+        except (json.JSONDecodeError, TypeError):
+            st.error("Sonuç okunamadı. Test gerçekten tamamlandı mı?")
+    else:
+        st.warning("Henüz sonuç yok. Test bitmeden butona basmayın.")
