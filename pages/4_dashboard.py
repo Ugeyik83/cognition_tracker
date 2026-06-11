@@ -15,7 +15,7 @@ st.markdown(page_header("Operatör Dashboard", "Tüm test sonuçları"), unsafe_
 rows = load_all()
 
 if not rows:
-    st.markdown("""
+    st.html("""
     <div style="padding:60px;text-align:center;color:#4A526A">
         <div style="font-size:40px;margin-bottom:12px">📭</div>
         <div style="font-size:16px">Henüz kayıtlı sonuç yok.</div>
@@ -23,7 +23,7 @@ if not rows:
             Testleri tamamladıktan sonra buraya yansır.
         </div>
     </div>
-    """, unsafe_allow_html=True)
+    """)
     st.stop()
 
 df = pd.DataFrame(rows)
@@ -40,7 +40,7 @@ kosul  = int((df.get("verdict","") == "KOŞULLU").sum())   if "verdict" in df.co
 fail   = int((df.get("verdict","") == "UYGUN DEĞİL").sum()) if "verdict" in df.columns else 0
 
 # ── Özet kartlar ─────────────────────────────────────────────
-st.markdown(f"""
+st.html(f"""
 <div style="padding:20px;background:#0A0F1E">
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px">
 
@@ -74,7 +74,7 @@ st.markdown(f"""
         <div style="font-size:11px;color:#8B95B0;margin-top:3px">30 gün sonra tekrar</div>
     </div>
 </div>
-""", unsafe_allow_html=True)
+""")
 
 # ── Tablo ─────────────────────────────────────────────────────
 disp_cols = {
@@ -86,14 +86,14 @@ disp_cols = {
 }
 avail = {k: v for k, v in disp_cols.items() if k in df.columns}
 
-st.markdown("""
+st.html("""
 <div style="background:#111827;border:1px solid rgba(255,255,255,0.08);
             border-radius:12px;overflow:hidden;margin-bottom:20px">
     <div style="display:flex;align-items:center;justify-content:space-between;
                 padding:13px 16px;border-bottom:1px solid rgba(255,255,255,0.08)">
         <div style="font-size:13px;font-weight:600;color:#F0F4FF">Son Adaylar</div>
     </div>
-""", unsafe_allow_html=True)
+""")
 
 # Tablo başlığı
 header_cols = list(avail.values()) + ["KARAR"]
@@ -141,14 +141,14 @@ for _, row in df.tail(20).iloc[::-1].iterrows():
 
     rows_html += f"<tr>{cells}{verdict_cell}</tr>"
 
-st.markdown(f"""
+st.html(f"""
 <table style="width:100%;border-collapse:collapse">
     <thead><tr>{header_html}</tr></thead>
     <tbody>{rows_html}</tbody>
 </table>
 </div>
 </div>
-""", unsafe_allow_html=True)
+""")
 
 # ── CSV indir ─────────────────────────────────────────────────
 st.download_button(

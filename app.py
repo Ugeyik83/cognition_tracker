@@ -27,10 +27,7 @@ for k, v in INITIAL_STATE.items():
         st.session_state[k] = v
 
 # ── Header ────────────────────────────────────────────────────
-st.markdown(
-    page_header("CognitionTracker", "Forklift Operatörü Bilişsel Tarama Sistemi"),
-    unsafe_allow_html=True,
-)
+st.html(page_header("CognitionTracker", "Forklift Operatörü Bilişsel Tarama Sistemi"))
 
 # ── Karşılama içeriği ─────────────────────────────────────────
 completed = sum([
@@ -39,7 +36,7 @@ completed = sum([
     st.session_state.dual_result   is not None,
 ])
 
-st.markdown(f"""
+st.html(f"""
 <div style="min-height:460px;display:flex;flex-direction:column;
             align-items:center;justify-content:center;
             padding:48px 24px;background:#0A0F1E">
@@ -75,7 +72,7 @@ st.markdown(f"""
         </div>
     </div>
 </div>
-""", unsafe_allow_html=True)
+""")
 
 # ── Aday girişi ───────────────────────────────────────────────
 col1, col2, col3 = st.columns([1, 2, 1])
@@ -91,7 +88,7 @@ with col2:
                 else:
                     st.error("Operatör ID boş olamaz.")
     else:
-        st.markdown(f"""
+        st.html(f"""
         <div style="background:#1A2235;border:1px solid rgba(61,139,255,0.3);
                     border-radius:12px;padding:16px;text-align:center;margin-bottom:12px">
             <div style="font-size:12px;color:#8B95B0;margin-bottom:4px">Aktif Aday</div>
@@ -106,7 +103,7 @@ with col2:
                 {completed}/3 modül tamamlandı
             </div>
         </div>
-        """, unsafe_allow_html=True)
+        """)
 
         if completed < 3:
             st.info("Sol menüden sırayla testleri tamamlayın.")
@@ -118,8 +115,8 @@ with col2:
                 st.session_state[k] = v
             st.rerun()
 
-st.markdown("""
+st.html("""
 <div style="text-align:center;font-size:11px;color:#4A526A;padding:16px">
     Verileriniz yalnızca bu cihazda yerel olarak saklanır · KVKK Madde 6
 </div>
-""", unsafe_allow_html=True)
+""")

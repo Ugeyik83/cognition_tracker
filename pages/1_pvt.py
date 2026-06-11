@@ -30,7 +30,7 @@ if st.session_state.get("pvt_result"):
     rt_color  = "#00E5A0" if rt < 300 else ("#F5A623" if rt < 400 else "#FF4D6A")
     lap_color = "#00E5A0" if lap < 5  else ("#F5A623" if lap < 10  else "#FF4D6A")
 
-    st.markdown(f"""
+    st.html(f"""
     <div style="padding:24px;background:#0A0F1E">
         <div style="background:rgba(0,229,160,0.08);border:1px solid rgba(0,229,160,0.2);
                     border-radius:12px;padding:16px;margin-bottom:20px;
@@ -44,7 +44,7 @@ if st.session_state.get("pvt_result"):
             </span>
         </div>
         <div style="display:flex;gap:12px">
-    """, unsafe_allow_html=True)
+    """)
 
     st.markdown(
         metric_card("ORT. RT", f"{rt} ms", rt_color) +
@@ -52,7 +52,7 @@ if st.session_state.get("pvt_result"):
         metric_card("ERKEN BASMA", str(fs), "#F0F4FF"),
         unsafe_allow_html=True,
     )
-    st.markdown("</div></div>", unsafe_allow_html=True)
+    st.html("</div></div>")
 
     if st.button("Tekrar yap", use_container_width=False):
         st.session_state["pvt_result"] = None
@@ -61,7 +61,7 @@ if st.session_state.get("pvt_result"):
 
 # Talimat
 with st.expander("📋 Test talimatları", expanded=True):
-    st.markdown("""
+    st.html("""
     - Ekranda **sarı daire** göründüğünde **SPACE** veya daireye **tıklayın**
     - Daire çıkmadan **basmayın** — erken basma hata sayılır
     - Süre: **3 dakika** — odaklanın, test bitince butona basın
@@ -73,7 +73,7 @@ if not ready:
 
 # JS bileşeni
 components.html(
-    pvt_component(duration_ms=30_000, min_isi_ms=2000,
+    pvt_component(duration_ms=180_000, min_isi_ms=2000,
                   max_isi_ms=8000, lapse_threshold_ms=500),
     height=540, scrolling=False,
 )
@@ -84,7 +84,7 @@ st.markdown("""
             font-size:13px;color:#8B95B0">
     ⏳ Test devam ediyor. Bittikten sonra aşağıdaki butona basın.
 </div>
-""", unsafe_allow_html=True)
+""")
 
 if st.button("✅ Test bitti — Sonucu Al", type="primary", use_container_width=True):
     raw = st_javascript("""(function(){

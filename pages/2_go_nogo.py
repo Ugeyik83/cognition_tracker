@@ -30,7 +30,7 @@ if st.session_state.get("gonogo_result"):
     fa_color = "#00E5A0" if fa < 0.10 else ("#F5A623" if fa < 0.20 else "#FF4D6A")
     dp_color = "#00E5A0" if dp > 2.5  else ("#F5A623" if dp > 1.5  else "#FF4D6A")
 
-    st.markdown(f"""
+    st.html(f"""
     <div style="padding:24px;background:#0A0F1E">
         <div style="background:rgba(0,229,160,0.08);border:1px solid rgba(0,229,160,0.2);
                     border-radius:12px;padding:16px;margin-bottom:20px;
@@ -44,7 +44,7 @@ if st.session_state.get("gonogo_result"):
             </span>
         </div>
         <div style="display:flex;gap:12px">
-    """, unsafe_allow_html=True)
+    """)
 
     st.markdown(
         metric_card("HIT RATE",    f"{hr:.0%}", hr_color) +
@@ -52,7 +52,7 @@ if st.session_state.get("gonogo_result"):
         metric_card("d-prime",     f"{dp:.2f}", dp_color),
         unsafe_allow_html=True,
     )
-    st.markdown("</div></div>", unsafe_allow_html=True)
+    st.html("</div></div>")
 
     if st.button("Tekrar yap"):
         st.session_state["gonogo_result"] = None
@@ -60,7 +60,7 @@ if st.session_state.get("gonogo_result"):
     st.stop()
 
 with st.expander("📋 Test talimatları", expanded=True):
-    st.markdown("""
+    st.html("""
     - 🟢 **Yeşil daire** → **SPACE** tuşuna basın (GO)
     - 🔴 **Kırmızı daire** → **Basmayın** (NO-GO)
     - 60 deneme, hızlı ve doğru olun
@@ -71,7 +71,7 @@ if not ready:
     st.stop()
 
 components.html(
-    gonogo_component(n_trials=20, go_ratio=0.75, stim_ms=800, isi_ms=1200),
+    gonogo_component(n_trials=60, go_ratio=0.75, stim_ms=800, isi_ms=1200),
     height=540, scrolling=False,
 )
 
@@ -81,7 +81,7 @@ st.markdown("""
             font-size:13px;color:#8B95B0">
     ⏳ Test devam ediyor. Bittikten sonra aşağıdaki butona basın.
 </div>
-""", unsafe_allow_html=True)
+""")
 
 if st.button("✅ Test bitti — Sonucu Al", type="primary", use_container_width=True):
     raw = st_javascript("""(function(){

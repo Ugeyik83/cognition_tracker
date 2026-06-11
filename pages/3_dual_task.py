@@ -29,7 +29,7 @@ if st.session_state.get("dual_result"):
     pa_color = "#00E5A0" if pa > 0.80 else ("#F5A623" if pa > 0.65 else "#FF4D6A")
     sa_color = "#00E5A0" if sa > 0.70 else ("#F5A623" if sa > 0.55 else "#FF4D6A")
 
-    st.markdown(f"""
+    st.html(f"""
     <div style="padding:24px;background:#0A0F1E">
         <div style="background:rgba(0,229,160,0.08);border:1px solid rgba(0,229,160,0.2);
                     border-radius:12px;padding:16px;margin-bottom:20px;
@@ -43,14 +43,14 @@ if st.session_state.get("dual_result"):
             </span>
         </div>
         <div style="display:flex;gap:12px">
-    """, unsafe_allow_html=True)
+    """)
 
     st.markdown(
         metric_card("BİRİNCİL GÖREV", f"{pa:.0%}", pa_color) +
         metric_card("İKİNCİL GÖREV",  f"{sa:.0%}", sa_color),
         unsafe_allow_html=True,
     )
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.html("</div>")
 
     # CSV kaydet
     if (st.session_state.get("pvt_result") and
@@ -63,15 +63,15 @@ if st.session_state.get("dual_result"):
             dual=st.session_state["dual_result"],
         )
         st.session_state["session_saved"] = True
-        st.markdown(f"""
+        st.html(f"""
         <div style="margin-top:16px;background:rgba(61,139,255,0.08);
                     border:1px solid rgba(61,139,255,0.2);border-radius:10px;
                     padding:12px 16px;font-size:13px;color:#8B95B0">
             💾 Sonuçlar kaydedildi: <code style="color:#3D8BFF">{path}</code>
         </div>
-        """, unsafe_allow_html=True)
+        """)
 
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.html("</div>")
 
     if st.button("Tekrar yap"):
         st.session_state["dual_result"] = None
@@ -80,7 +80,7 @@ if st.session_state.get("dual_result"):
     st.stop()
 
 with st.expander("📋 Test talimatları", expanded=True):
-    st.markdown("""
+    st.html("""
     **Üst alan — Renk görevi (sürekli):**
     - 🟠 Turuncu daire → **SPACE**
     - Mavi / Mor daire → Basma
@@ -96,7 +96,7 @@ if not ready:
     st.stop()
 
 components.html(
-    dual_task_component(duration_ms=30_000, shape_interval_min_ms=2000,
+    dual_task_component(duration_ms=90_000, shape_interval_min_ms=2000,
                         shape_interval_max_ms=4500, shape_duration_ms=1500),
     height=580, scrolling=False,
 )
@@ -107,7 +107,7 @@ st.markdown("""
             font-size:13px;color:#8B95B0">
     ⏳ Test devam ediyor. Bittikten sonra aşağıdaki butona basın.
 </div>
-""", unsafe_allow_html=True)
+""")
 
 if st.button("✅ Test bitti — Sonucu Al", type="primary", use_container_width=True):
     raw = st_javascript("""(function(){
