@@ -1,8 +1,5 @@
 """
-pages/1_pvt.py — Psychomotor Vigilance Task
-
-Çözüm: test sırasında rerun yok, test bitince manuel buton ile sonuç alınır.
-Test sırasında hiç rerun yapılmaz → iframe sıfırlanmaz.
+pages/1_pvt.py — PVT testi, yeni tasarım.
 """
 
 import json
@@ -10,67 +7,109 @@ import streamlit as st
 import streamlit.components.v1 as components
 from streamlit_javascript import st_javascript
 from utils.js_components import pvt_component
+from utils.styles import BASE_CSS, page_header, progress_sidebar, metric_card
 
-st.set_page_config(page_title="PVT | Dikkat Testi", layout="centered")
-st.title("⚡ Modül 1 — Vigilans Testi (PVT)")
+st.set_page_config(page_title="PVT | CognitionTracker", layout="wide",
+                   initial_sidebar_state="collapsed")
+st.markdown(BASE_CSS, unsafe_allow_html=True)
 
 if not st.session_state.get("candidate_id"):
-    st.warning("Önce ana sayfadan Aday ID girin.")
+    st.warning("Önce ana sayfadan Operatör ID girin.")
     st.stop()
 
-# Tamamlandıysa özet göster
+st.markdown(page_header("Modül 1 — Vigilans Testi (PVT)",
+                         f"Aday: {st.session_state.candidate_id}"),
+            unsafe_allow_html=True)
+
+# Tamamlandıysa özet
 if st.session_state.get("pvt_result"):
     r = st.session_state["pvt_result"]
-    st.success("✓ Bu modül tamamlandı.")
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Ort. RT",     f"{r.get('mean_rt', '—')} ms")
-    c2.metric("Lapse",       r.get("lapses", "—"))
-    c3.metric("Erken Basma", r.get("false_starts", "—"))
-    if st.button("Tekrar yap"):
+    rt  = r.get("mean_rt") or 0
+    lap = r.get("lapses") or 0
+    fs  = r.get("false_starts") or 0
+    rt_color  = "#00E5A0" if rt < 300 else ("#F5A623" if rt < 400 else "#FF4D6A")
+    lap_color = "#00E5A0" if lap < 5  else ("#F5A623" if lap < 10  else "#FF4D6A")
+
+    st.markdown(f"""
+    <div style="padding:24px;background:#0A0F1E">
+        <div style="background:rgba(0,229,160,0.08);border:1px solid rgba(0,229,160,0.2);
+                    border-radius:12px;padding:16px;margin-bottom:20px;
+                    display:flex;align-items:center;gap:10px">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M3 9L7 13L15 5" stroke="#00E5A0" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span style="font-size:14px;font-weight:600;color:#00E5A0">
+                Modül 1 tamamlandı
+            </span>
+        </div>
+        <div style="display:flex;gap:12px">
+    """, unsafe_allow_html=True)
+
+    st.markdown(
+        metric_card("ORT. RT", f"{rt} ms", rt_color) +
+        metric_card("LAPSE",   str(lap),   lap_color) +
+        metric_card("ERKEN BASMA", str(fs), "#F0F4FF"),
+        unsafe_allow_html=True,
+    )
+    st.markdown("</div></div>", unsafe_allow_html=True)
+
+    if st.button("Tekrar yap", use_container_width=False):
         st.session_state["pvt_result"] = None
         st.rerun()
     st.stop()
 
-with st.expander("📋 Talimatlar", expanded=True):
+# Talimat
+with st.expander("📋 Test talimatları", expanded=True):
     st.markdown("""
-    - Ekranda **sarı daire** göründüğünde **SPACE** tuşuna basın
-    - Daire çıkmadan **basmayın**
-    - Süre: **3 dakika** — odaklanın, ara vermeyin
-    - Test bitince sayfa otomatik güncellenir
+    - Ekranda **sarı daire** göründüğünde **SPACE** veya daireye **tıklayın**
+    - Daire çıkmadan **basmayın** — erken basma hata sayılır
+    - Süre: **3 dakika** — odaklanın, test bitince butona basın
     """)
 
 ready = st.checkbox("Talimatları okudum, hazırım.")
 if not ready:
     st.stop()
 
-# ── Test aktifken ASLA rerun yok ──────────────────────────────
-# JS bileşeni render edilir ve kendi başına çalışır.
-# localStorage'a yazdığında (test bitince) kullanıcı sayfayı
-# yenileyebilir VEYA aşağıdaki buton ile sonucu alır.
+# JS bileşeni
 components.html(
     pvt_component(duration_ms=30_000, min_isi_ms=2000,
                   max_isi_ms=8000, lapse_threshold_ms=500),
-    height=560, scrolling=False,
+    height=540, scrolling=False,
 )
 
-st.info("⏳ Test devam ediyor. Bitince **'Sonucu Al'** butonuna basın.")
+st.markdown("""
+<div style="background:rgba(61,139,255,0.06);border:1px solid rgba(61,139,255,0.15);
+            border-radius:10px;padding:12px 16px;margin:12px 0;
+            font-size:13px;color:#8B95B0">
+    ⏳ Test devam ediyor. Bittikten sonra aşağıdaki butona basın.
+</div>
+""", unsafe_allow_html=True)
 
-# Tek tetikleyici: kullanıcının manuel butonu.
-# Böylece test sırasında hiç rerun olmaz.
-if st.button("✅ Test bitti — Sonucu Al", type="primary"):
-    raw = st_javascript("""(function(){var v=null;try{v=window.top.localStorage.getItem('pvt_result');}catch(e){}if(!v){try{v=window.parent.localStorage.getItem('pvt_result');}catch(e){}}if(!v){try{v=localStorage.getItem('pvt_result');}catch(e){}}return v;})()""")
+if st.button("✅ Test bitti — Sonucu Al", type="primary", use_container_width=True):
+    raw = st_javascript("""(function(){
+        var v=null;
+        try{v=window.top.localStorage.getItem('pvt_result');}catch(e){}
+        if(!v){try{v=window.parent.localStorage.getItem('pvt_result');}catch(e){}}
+        if(!v){try{v=localStorage.getItem('pvt_result');}catch(e){}}
+        return v;
+    })()""")
     if raw and raw not in ("null", "undefined", None):
         try:
-            data    = json.loads(raw)
-            summary = data.get("summary", {})
+            data = json.loads(raw)
+            s = data.get("summary", {})
             st.session_state["pvt_result"] = {
-                "mean_rt":      summary.get("mean_rt"),
-                "median_rt":    summary.get("median_rt"),
-                "lapses":       summary.get("lapses"),
-                "false_starts": summary.get("false_starts"),
-                "n_trials":     summary.get("n_trials"),
+                "mean_rt":      s.get("mean_rt"),
+                "median_rt":    s.get("median_rt"),
+                "lapses":       s.get("lapses"),
+                "false_starts": s.get("false_starts"),
+                "n_trials":     s.get("n_trials"),
             }
-            st_javascript("""(function(){try{window.top.localStorage.removeItem('pvt_result');}catch(e){}try{window.parent.localStorage.removeItem('pvt_result');}catch(e){}try{localStorage.removeItem('pvt_result');}catch(e){}})()""")
+            st_javascript("""(function(){
+                try{window.top.localStorage.removeItem('pvt_result');}catch(e){}
+                try{window.parent.localStorage.removeItem('pvt_result');}catch(e){}
+                try{localStorage.removeItem('pvt_result');}catch(e){}
+            })()""")
             st.rerun()
         except (json.JSONDecodeError, TypeError):
             st.error("Sonuç okunamadı. Test gerçekten tamamlandı mı?")

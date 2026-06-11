@@ -1,166 +1,159 @@
 """
-pages/4_dashboard.py — Sonuç Görselleştirme
-
-Mevcut adayın sonuçları + tüm geçmiş adaylarla karşılaştırma.
-Plotly grafikleri, CSV indir.
+pages/4_dashboard.py — Dashboard, yeni tasarım.
 """
 
 import pandas as pd
-import plotly.graph_objects as go
-import plotly.express as px
 import streamlit as st
-from utils.data_logger import load_all
+from utils.styles import BASE_CSS, page_header, verdict_badge
+from utils.data_logger import load_all, export_csv
 
-st.set_page_config(page_title="Dashboard | Dikkat Testi", layout="wide")
-st.title("📊 Sonuç Dashboard")
+st.set_page_config(page_title="Dashboard | CognitionTracker", layout="wide",
+                   initial_sidebar_state="collapsed")
+st.markdown(BASE_CSS, unsafe_allow_html=True)
+st.markdown(page_header("Operatör Dashboard", "Tüm test sonuçları"), unsafe_allow_html=True)
 
-# ── Mevcut aday özeti ─────────────────────────────────────────
-pvt    = st.session_state.get("pvt_result")
-gonogo = st.session_state.get("gonogo_result")
-dual   = st.session_state.get("dual_result")
-cid    = st.session_state.get("candidate_id", "—")
+rows = load_all()
 
-if pvt or gonogo or dual:
-    st.subheader(f"Aday: {cid}")
-    c1, c2, c3 = st.columns(3)
-
-    with c1:
-        st.markdown("**Modül 1 — PVT**")
-        if pvt:
-            mean_rt = pvt.get("mean_rt") or 0
-            lapses  = pvt.get("lapses") or 0
-            st.metric("Ort. RT",    f"{mean_rt} ms",
-                      delta="Normal" if mean_rt < 300 else "Yüksek",
-                      delta_color="normal" if mean_rt < 300 else "inverse")
-            st.metric("Lapse (>500ms)", lapses,
-                      delta="OK" if lapses < 5 else "⚠",
-                      delta_color="normal" if lapses < 5 else "inverse")
-            st.metric("Erken Basma", pvt.get("false_starts") or 0)
-        else:
-            st.info("Henüz tamamlanmadı")
-
-    with c2:
-        st.markdown("**Modül 2 — Go/No-Go**")
-        if gonogo:
-            hr  = float(gonogo.get("hit_rate") or 0)
-            fa  = float(gonogo.get("false_alarm_rate") or 0)
-            dp  = float(gonogo.get("dprime") or 0)
-            st.metric("Hit Rate",    f"{hr:.0%}")
-            st.metric("False Alarm", f"{fa:.0%}",
-                      delta="OK" if fa < 0.10 else "⚠",
-                      delta_color="normal" if fa < 0.10 else "inverse")
-            st.metric("d-prime",     f"{dp:.2f}",
-                      delta="İyi" if dp > 2.5 else "Düşük",
-                      delta_color="normal" if dp > 2.5 else "inverse")
-        else:
-            st.info("Henüz tamamlanmadı")
-
-    with c3:
-        st.markdown("**Modül 3 — Dual Task**")
-        if dual:
-            pa = float(dual.get("primary_accuracy") or 0)
-            sa = float(dual.get("secondary_accuracy") or 0)
-            st.metric("Birincil Görev", f"{pa:.0%}")
-            st.metric("İkincil Görev",  f"{sa:.0%}")
-            st.metric("Ortalama",       f"{(pa+sa)/2:.0%}")
-        else:
-            st.info("Henüz tamamlanmadı")
-
-    st.divider()
-
-# ── Geçmiş veriler ────────────────────────────────────────────
-all_rows = load_all()
-
-if not all_rows:
-    st.info("Henüz kayıtlı sonuç yok.")
+if not rows:
+    st.markdown("""
+    <div style="padding:60px;text-align:center;color:#4A526A">
+        <div style="font-size:40px;margin-bottom:12px">📭</div>
+        <div style="font-size:16px">Henüz kayıtlı sonuç yok.</div>
+        <div style="font-size:13px;margin-top:6px">
+            Testleri tamamladıktan sonra buraya yansır.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
     st.stop()
 
-df = pd.DataFrame(all_rows)
+df = pd.DataFrame(rows)
+numeric_cols = ["pvt_mean_rt","pvt_lapses","pvt_false_starts",
+                "gng_hit_rate","gng_false_alarm_rate","gng_dprime",
+                "dual_primary_acc","dual_secondary_acc"]
+for c in numeric_cols:
+    if c in df.columns:
+        df[c] = pd.to_numeric(df[c], errors="coerce")
 
-# Sayısal dönüşüm
-numeric_cols = [
-    "pvt_mean_rt", "pvt_lapses", "pvt_false_starts",
-    "gng_hit_rate", "gng_false_alarm_rate", "gng_dprime",
-    "dual_primary_acc", "dual_secondary_acc",
-]
-for col in numeric_cols:
-    if col in df.columns:
-        df[col] = pd.to_numeric(df[col], errors="coerce")
+total  = len(df)
+uygun  = int((df.get("verdict","") == "UYGUN").sum())     if "verdict" in df.columns else 0
+kosul  = int((df.get("verdict","") == "KOŞULLU").sum())   if "verdict" in df.columns else 0
+fail   = int((df.get("verdict","") == "UYGUN DEĞİL").sum()) if "verdict" in df.columns else 0
 
-st.subheader(f"Tüm Adaylar — {len(df)} kayıt")
+# ── Özet kartlar ─────────────────────────────────────────────
+st.markdown(f"""
+<div style="padding:20px;background:#0A0F1E">
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px">
 
-# Filtre
-col_f1, col_f2 = st.columns(2)
-with col_f1:
-    if "pvt_mean_rt" in df.columns:
-        max_rt = int(df["pvt_mean_rt"].dropna().max() or 1000)
-        rt_filter = st.slider("Max PVT Ort. RT (ms)", 0, max_rt, max_rt)
-        df = df[df["pvt_mean_rt"] <= rt_filter]
+    <div style="background:rgba(61,139,255,0.08);border:1px solid rgba(61,139,255,0.25);
+                border-radius:12px;padding:14px">
+        <div style="font-size:10px;font-weight:500;color:#8B95B0;margin-bottom:6px">TOPLAM ADAY</div>
+        <div style="font-size:26px;font-weight:700;color:#3D8BFF;letter-spacing:-1px">{total}</div>
+        <div style="font-size:11px;color:#8B95B0;margin-top:3px">Kayıtlı sonuç</div>
+    </div>
 
-# Tablo
-st.dataframe(df, use_container_width=True, height=300)
+    <div style="background:#111827;border:1px solid rgba(255,255,255,0.08);
+                border-radius:12px;padding:14px">
+        <div style="font-size:10px;font-weight:500;color:#8B95B0;margin-bottom:6px">UYGUN</div>
+        <div style="font-size:26px;font-weight:700;color:#00E5A0;letter-spacing:-1px">{uygun}</div>
+        <div style="font-size:11px;color:#8B95B0;margin-top:3px">
+            {f'%{int(uygun/total*100)}' if total else '—'} geçme oranı
+        </div>
+    </div>
 
-# ── Grafikler ─────────────────────────────────────────────────
-st.divider()
-g1, g2 = st.columns(2)
+    <div style="background:#111827;border:1px solid rgba(255,255,255,0.08);
+                border-radius:12px;padding:14px">
+        <div style="font-size:10px;font-weight:500;color:#8B95B0;margin-bottom:6px">KOŞULLU</div>
+        <div style="font-size:26px;font-weight:700;color:#F5A623;letter-spacing:-1px">{kosul}</div>
+        <div style="font-size:11px;color:#8B95B0;margin-top:3px">Takip gerekli</div>
+    </div>
 
-with g1:
-    if "pvt_mean_rt" in df.columns:
-        st.markdown("#### PVT — RT Dağılımı")
-        fig = px.histogram(
-            df, x="pvt_mean_rt", nbins=15,
-            color_discrete_sequence=["#00C88C"],
-            labels={"pvt_mean_rt": "Ortalama RT (ms)"},
-        )
-        fig.add_vline(x=300, line_dash="dash", line_color="#FF8C00",
-                      annotation_text="300ms eşiği")
-        fig.update_layout(
-            paper_bgcolor="#0F1419", plot_bgcolor="#161E26",
-            font_color="#D2DCE1", margin=dict(t=20, b=20),
-        )
-        st.plotly_chart(fig, use_container_width=True)
+    <div style="background:#111827;border:1px solid rgba(255,255,255,0.08);
+                border-radius:12px;padding:14px">
+        <div style="font-size:10px;font-weight:500;color:#8B95B0;margin-bottom:6px">UYGUN DEĞİL</div>
+        <div style="font-size:26px;font-weight:700;color:#FF4D6A;letter-spacing:-1px">{fail}</div>
+        <div style="font-size:11px;color:#8B95B0;margin-top:3px">30 gün sonra tekrar</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
-with g2:
-    if "gng_dprime" in df.columns:
-        st.markdown("#### Go/No-Go — d-prime Dağılımı")
-        fig2 = px.histogram(
-            df, x="gng_dprime", nbins=15,
-            color_discrete_sequence=["#3B82F6"],
-            labels={"gng_dprime": "d-prime"},
-        )
-        fig2.add_vline(x=2.5, line_dash="dash", line_color="#00C88C",
-                       annotation_text="İyi performans")
-        fig2.update_layout(
-            paper_bgcolor="#0F1419", plot_bgcolor="#161E26",
-            font_color="#D2DCE1", margin=dict(t=20, b=20),
-        )
-        st.plotly_chart(fig2, use_container_width=True)
+# ── Tablo ─────────────────────────────────────────────────────
+disp_cols = {
+    "candidate_id": "ADAY ID",
+    "timestamp":    "TARİH",
+    "pvt_mean_rt":  "PVT RT",
+    "gng_dprime":   "d-prime",
+    "dual_primary_acc": "DUAL",
+}
+avail = {k: v for k, v in disp_cols.items() if k in df.columns}
 
-# Dual Task scatter
-if "dual_primary_acc" in df.columns and "dual_secondary_acc" in df.columns:
-    st.markdown("#### Dual Task — Birincil vs İkincil Görev Doğruluğu")
-    fig3 = px.scatter(
-        df, x="dual_primary_acc", y="dual_secondary_acc",
-        hover_data=["candidate_id"] if "candidate_id" in df.columns else None,
-        color_discrete_sequence=["#A855F7"],
-        labels={
-            "dual_primary_acc":   "Birincil Görev Doğruluğu",
-            "dual_secondary_acc": "İkincil Görev Doğruluğu",
-        },
-    )
-    fig3.update_layout(
-        paper_bgcolor="#0F1419", plot_bgcolor="#161E26",
-        font_color="#D2DCE1", margin=dict(t=20, b=20),
-        xaxis=dict(tickformat=".0%", range=[0, 1.05]),
-        yaxis=dict(tickformat=".0%", range=[0, 1.05]),
-    )
-    st.plotly_chart(fig3, use_container_width=True)
+st.markdown("""
+<div style="background:#111827;border:1px solid rgba(255,255,255,0.08);
+            border-radius:12px;overflow:hidden;margin-bottom:20px">
+    <div style="display:flex;align-items:center;justify-content:space-between;
+                padding:13px 16px;border-bottom:1px solid rgba(255,255,255,0.08)">
+        <div style="font-size:13px;font-weight:600;color:#F0F4FF">Son Adaylar</div>
+    </div>
+""", unsafe_allow_html=True)
 
-# ── CSV İndir ─────────────────────────────────────────────────
-st.divider()
+# Tablo başlığı
+header_cols = list(avail.values()) + ["KARAR"]
+header_html = "".join(
+    f'<th style="font-size:10px;font-weight:500;color:#4A526A;padding:8px 14px;'
+    f'text-align:left;border-bottom:1px solid rgba(255,255,255,0.06)">{h}</th>'
+    for h in header_cols
+)
+rows_html = ""
+for _, row in df.tail(20).iloc[::-1].iterrows():
+    cells = ""
+    for col in avail.keys():
+        val = row.get(col, "—")
+        if col == "pvt_mean_rt" and val:
+            try:
+                v = float(val)
+                color = "#00E5A0" if v < 300 else ("#F5A623" if v < 400 else "#FF4D6A")
+                val = f'<span style="color:{color}">{v:.0f} ms</span>'
+            except: pass
+        elif col == "gng_dprime" and val:
+            try:
+                v = float(val)
+                color = "#00E5A0" if v > 2.5 else ("#F5A623" if v > 1.5 else "#FF4D6A")
+                val = f'<span style="color:{color}">{v:.2f}</span>'
+            except: pass
+        elif col == "dual_primary_acc" and val:
+            try:
+                v = float(val)
+                val = f"{v:.0%}"
+            except: pass
+        first = col == list(avail.keys())[0]
+        style = "font-weight:500;color:#F0F4FF" if first else "color:#8B95B0"
+        cells += f'<td style="font-size:13px;padding:10px 14px;{style};border-bottom:1px solid rgba(255,255,255,0.04)">{val}</td>'
+
+    verdict = row.get("verdict", "")
+    badge_cfg = {
+        "UYGUN":       ("rgba(0,229,160,0.1)",  "#00E5A0"),
+        "KOŞULLU":     ("rgba(245,166,35,0.1)",  "#F5A623"),
+        "UYGUN DEĞİL": ("rgba(255,77,106,0.1)",  "#FF4D6A"),
+    }
+    bg, color = badge_cfg.get(verdict, ("rgba(255,255,255,0.06)", "#8B95B0"))
+    verdict_cell = (f'<td style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.04)">'
+                    f'<span style="font-size:11px;font-weight:600;padding:3px 9px;'
+                    f'border-radius:20px;background:{bg};color:{color}">{verdict or "—"}</span></td>')
+
+    rows_html += f"<tr>{cells}{verdict_cell}</tr>"
+
+st.markdown(f"""
+<table style="width:100%;border-collapse:collapse">
+    <thead><tr>{header_html}</tr></thead>
+    <tbody>{rows_html}</tbody>
+</table>
+</div>
+</div>
+""", unsafe_allow_html=True)
+
+# ── CSV indir ─────────────────────────────────────────────────
 st.download_button(
-    "⬇ Tüm Sonuçları CSV İndir",
-    data=df.to_csv(index=False, encoding="utf-8-sig").encode("utf-8-sig"),
-    file_name="dikkat_testi_sonuclari.csv",
+    "⬇ CSV İndir",
+    data=export_csv(df),
+    file_name="cognition_tracker_sonuclari.csv",
     mime="text/csv",
 )
