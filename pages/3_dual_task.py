@@ -38,7 +38,7 @@ ready = st.checkbox("Talimatları okudum ve hazırım.")
 if not ready:
     st.stop()
 
-# Dual Task bileşenini göster (gizli textarea içerir)
+# Dual Task bileşenini göster
 components.html(dual_task_component(duration_ms=90000,
                                     shape_interval_min_ms=2000,
                                     shape_interval_max_ms=4500,
@@ -46,30 +46,39 @@ components.html(dual_task_component(duration_ms=90000,
                 height=620,
                 scrolling=False)
 
-# Bileşeni başlatmak için bir buton (JavaScript'teki startDualTask fonksiyonunu çağırır)
+# Buton: JavaScript fonksiyonunu çağır
 st.markdown("""
-<div style="display: flex; justify-content: center;">
-    <button id="startDualTaskBtn" style="background: #4CAF50; color: white; border: none; padding: 12px 30px; font-size: 18px; border-radius: 40px; cursor: pointer; margin: 20px 0;">
+<div style="display: flex; justify-content: center; margin: 10px 0;">
+    <button id="startDualTaskBtn" style="background: #4CAF50; color: white; border: none; padding: 12px 30px; font-size: 18px; border-radius: 40px; cursor: pointer;">
         🚀 Testi Başlat
     </button>
 </div>
 <script>
-    const btn = document.getElementById('startDualTaskBtn');
-    if (btn) {
-        btn.onclick = () => {
-            if (typeof window.startDualTask === 'function') {
-                window.startDualTask();
-                btn.disabled = true;
-                btn.innerText = '⏳ Test devam ediyor...';
-            } else {
-                alert('Bileşen yüklenmedi, sayfayı yenileyin.');
-            }
-        };
+    function waitForStart() {
+        var btn = document.getElementById('startDualTaskBtn');
+        if (btn) {
+            btn.onclick = function() {
+                if (typeof window.startDualTask === 'function') {
+                    window.startDualTask();
+                    btn.disabled = true;
+                    btn.innerText = '⏳ Test devam ediyor...';
+                    btn.style.opacity = '0.6';
+                } else {
+                    alert('Bileşen henüz yüklenmedi. Lütfen 1 saniye bekleyip tekrar deneyin.');
+                    setTimeout(waitForStart, 500);
+                }
+            };
+        }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', waitForStart);
+    } else {
+        waitForStart();
     }
 </script>
 """, unsafe_allow_html=True)
 
-# Gizli textarea (Streamlit tarafında) – sonucu yakalamak için
+# Gizli textarea
 with st.container():
     result_json = st.text_area("", key="dual_hidden_result", label_visibility="collapsed", height=1)
     st.markdown("""
@@ -84,7 +93,6 @@ if result_json:
     try:
         import json
         data = json.loads(result_json)
-        # data içinde summary var; onu doğrudan kaydedelim
         summary = data.get("summary", data)
         if send_result_to_backend(summary, RESULT_KEY):
             st.success("✅ İkili Görev sonucu kaydedildi!", icon="✅")
@@ -98,7 +106,6 @@ if final:
     col1, col2 = st.columns(2)
     col1.metric("Renk Görevi (Turuncu→Space)", f"{final.get('primary_accuracy', 0):.1%}")
     col2.metric("Şekil Görevi (D→daire, K→kare)", f"{final.get('secondary_accuracy', 0):.1%}")
-    # İlerleme çubuğu
     st.progress(final.get('primary_accuracy', 0), text="Renk görevi başarısı")
     st.progress(final.get('secondary_accuracy', 0), text="Şekil görevi başarısı")
 else:

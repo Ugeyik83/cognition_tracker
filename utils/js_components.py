@@ -6,16 +6,13 @@ def dual_task_component(duration_ms=90000, shape_interval_min_ms=2000,
     Renk (üst) ve şekil (alt) görevlerini içeren Dual Task bileşeni.
     Sonuçları gizli bir textarea'ya yazar.
     """
-    # Sabit değerler: renk döngü aralığı 1800 ms
-    COLOR_CYCLE_INTERVAL = 1800
-    
     return f"""
     <div id="dual-task-container" style="font-family: 'Segoe UI', sans-serif; max-width: 800px; margin: 0 auto;">
         <div style="background: #1E1E2F; border-radius: 20px; padding: 20px; color: white;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
-                <div>⏱️ <span id="timer">{duration_ms // 1000}</span> saniye</div>
-                <div>🎯 Renk: <span id="primaryScore">0</span> / ?</div>
-                <div>🔷 Şekil: <span id="secondaryScore">0</span> / ?</div>
+                <div>⏱️ <span id="timer">90</span> saniye</div>
+                <div>🎯 Renk: <span id="primaryScore">0</span> / 0</div>
+                <div>🔷 Şekil: <span id="secondaryScore">0</span> / 0</div>
             </div>
             
             <!-- Üst alan: Renk görevi -->
@@ -40,15 +37,13 @@ def dual_task_component(duration_ms=90000, shape_interval_min_ms=2000,
     <script>
         (function() {{
             let active = false;
-            let startTime = null;
-            let timerInterval = null;
             let remainingSeconds = {duration_ms // 1000};
+            let timerInterval = null;
             
             // Renk görevi
             let primaryCorrect = 0;
             let primaryTotal = 0;
             let currentColor = null;
-            const colorCycleInterval = {COLOR_CYCLE_INTERVAL};
             let colorInterval = null;
             const colors = [
                 {{ name: "turuncu", code: "#FF8C42", isTarget: true }},
@@ -60,7 +55,8 @@ def dual_task_component(duration_ms=90000, shape_interval_min_ms=2000,
             let secondaryCorrect = 0;
             let secondaryTotal = 0;
             let shapeTimeout = null;
-            let currentShape = null; // 'circle' veya 'square'
+            let currentShape = null;
+            let shapeVisible = false;
             
             const timerElem = document.getElementById('timer');
             const primaryScoreElem = document.getElementById('primaryScore');
@@ -71,14 +67,14 @@ def dual_task_component(duration_ms=90000, shape_interval_min_ms=2000,
             const hiddenTextarea = document.getElementById('resultData');
             
             function updateScores() {{
-                primaryScoreElem.innerText = `${{primaryCorrect}} / ${{primaryTotal}}`;
-                secondaryScoreElem.innerText = `${{secondaryCorrect}} / ${{secondaryTotal}}`;
+                primaryScoreElem.innerText = primaryCorrect + " / " + primaryTotal;
+                secondaryScoreElem.innerText = secondaryCorrect + " / " + secondaryTotal;
             }}
             
-            function showMessage(msg, isError = false) {{
+            function showMessage(msg, isError) {{
                 messageDiv.innerHTML = msg;
                 messageDiv.style.color = isError ? "#FF6B6B" : "#F5A623";
-                setTimeout(() => {{
+                setTimeout(function() {{
                     if (active) messageDiv.style.color = "#F5A623";
                 }}, 1000);
             }}
@@ -86,10 +82,9 @@ def dual_task_component(duration_ms=90000, shape_interval_min_ms=2000,
             // Renk görevi: rastgele renk göster
             function showRandomColor() {{
                 if (!active) return;
-                const colorObj = colors[Math.floor(Math.random() * colors.length)];
+                var colorObj = colors[Math.floor(Math.random() * colors.length)];
                 currentColor = colorObj;
                 colorStimulus.style.backgroundColor = colorObj.code;
-                // Her gösterim bir deneme sayılır (primaryTotal artar)
                 primaryTotal++;
                 updateScores();
             }}
@@ -97,22 +92,24 @@ def dual_task_component(duration_ms=90000, shape_interval_min_ms=2000,
             // Şekil görevi: rastgele süre sonra şekil göster
             function scheduleShape() {{
                 if (!active) return;
-                const delay = Math.random() * ({shape_interval_max_ms} - {shape_interval_min_ms}) + {shape_interval_min_ms};
-                shapeTimeout = setTimeout(() => {{
+                var delay = Math.random() * ({shape_interval_max_ms} - {shape_interval_min_ms}) + {shape_interval_min_ms};
+                shapeTimeout = setTimeout(function() {{
                     if (!active) return;
-                    const isCircle = Math.random() < 0.5;
+                    var isCircle = Math.random() < 0.5;
                     currentShape = isCircle ? 'circle' : 'square';
                     shapeStimulus.innerHTML = isCircle ? '●' : '■';
                     shapeStimulus.style.fontSize = '64px';
                     shapeStimulus.style.color = '#FFD966';
+                    shapeVisible = true;
                     secondaryTotal++;
                     updateScores();
                     // Şekil {shape_duration_ms} ms sonra kaybolur
-                    setTimeout(() => {{
+                    setTimeout(function() {{
                         if (active) {{
                             shapeStimulus.innerHTML = '?';
                             currentShape = null;
-                            scheduleShape();  // bir sonraki şekli planla
+                            shapeVisible = false;
+                            scheduleShape();
                         }}
                     }}, {shape_duration_ms});
                 }}, delay);
@@ -125,9 +122,9 @@ def dual_task_component(duration_ms=90000, shape_interval_min_ms=2000,
                 if (shapeTimeout) clearTimeout(shapeTimeout);
                 colorStimulus.style.backgroundColor = "#555";
                 shapeStimulus.innerHTML = "?";
-                const primaryAccuracy = primaryTotal > 0 ? primaryCorrect / primaryTotal : 0;
-                const secondaryAccuracy = secondaryTotal > 0 ? secondaryCorrect / secondaryTotal : 0;
-                const result = {{
+                var primaryAccuracy = primaryTotal > 0 ? primaryCorrect / primaryTotal : 0;
+                var secondaryAccuracy = secondaryTotal > 0 ? secondaryCorrect / secondaryTotal : 0;
+                var result = {{
                     primary_correct: primaryCorrect,
                     primary_total: primaryTotal,
                     primary_accuracy: primaryAccuracy,
@@ -143,11 +140,11 @@ def dual_task_component(duration_ms=90000, shape_interval_min_ms=2000,
                 }};
                 hiddenTextarea.value = JSON.stringify(result);
                 hiddenTextarea.dispatchEvent(new Event('change', {{ bubbles: true }}));
-                showMessage("✅ Test tamamlandı! Sonuçlar kaydedildi.");
+                showMessage("✅ Test tamamlandı! Sonuçlar kaydedildi.", false);
             }}
             
             function startTimer() {{
-                timerInterval = setInterval(() => {{
+                timerInterval = setInterval(function() {{
                     if (!active) return;
                     if (remainingSeconds <= 0) {{
                         clearInterval(timerInterval);
@@ -159,11 +156,10 @@ def dual_task_component(duration_ms=90000, shape_interval_min_ms=2000,
                 }}, 1000);
             }}
             
-            // Klavye olayları
             function handleKeydown(e) {{
                 if (!active) return;
-                const key = e.key;
-                // Renk görevi: Space tuşu sadece turuncu iken doğru
+                var key = e.key;
+                // Renk görevi: Space tuşu
                 if (key === ' ' || key === 'Space') {{
                     e.preventDefault();
                     if (currentColor && currentColor.isTarget) {{
@@ -198,7 +194,6 @@ def dual_task_component(duration_ms=90000, shape_interval_min_ms=2000,
             function startTest() {{
                 if (active) return;
                 active = true;
-                startTime = Date.now();
                 remainingSeconds = {duration_ms // 1000};
                 primaryCorrect = 0;
                 primaryTotal = 0;
@@ -206,20 +201,18 @@ def dual_task_component(duration_ms=90000, shape_interval_min_ms=2000,
                 secondaryTotal = 0;
                 currentColor = null;
                 currentShape = null;
+                shapeVisible = false;
                 updateScores();
                 timerElem.innerText = remainingSeconds;
-                // Renk döngüsü
-                colorInterval = setInterval(() => showRandomColor(), colorCycleInterval);
-                // İlk rengi hemen göster
+                // Renk döngüsü: her 1.8 saniyede yeni renk
+                colorInterval = setInterval(function() {{ showRandomColor(); }}, 1800);
                 showRandomColor();
-                // Şekil görevini başlat
                 scheduleShape();
                 startTimer();
                 showMessage("🎯 Test başladı! Turuncuya Space, daireye D, kareye K.", false);
                 window.addEventListener('keydown', handleKeydown);
             }}
             
-            // Testi başlatan fonksiyonu global yap
             window.startDualTask = startTest;
         }})();
     </script>
