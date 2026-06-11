@@ -1,25 +1,26 @@
 # pages/1_pvt.py
 import streamlit as st
 import streamlit.components.v1 as components
-from utils.result_handler import send_result_to_backend, get_result, clear_result
+import json
 
 st.set_page_config(page_title="PVT Testi", layout="centered")
 st.title("🧠 Psikomotor Vigilans Testi (PVT)")
 
-RESULT_KEY = "pvt_result"
-
+# --- Sidebar: yeni test butonu ---
 with st.sidebar:
     if st.button("🔄 Yeni Test Başlat", use_container_width=True):
-        clear_result(RESULT_KEY)
+        if "pvt_result" in st.session_state:
+            del st.session_state["pvt_result"]
         st.rerun()
 
-previous_result = get_result(RESULT_KEY)
-if previous_result:
+# --- Önceki sonuç varsa göster ---
+if st.session_state.get("pvt_result"):
+    prev = st.session_state["pvt_result"]
     with st.expander("📊 Önceki test sonucunuz", expanded=False):
-        st.metric("Ortalama Tepki Süresi", f"{previous_result['average']} ms")
-        st.write("Tüm tepkiler:", previous_result['reactionTimes'])
+        st.metric("Ortalama Tepki Süresi", f"{prev.get('average', '?')} ms")
+        st.write("Tüm tepkiler:", prev.get('reactionTimes', []))
 
-# Ana bileşen
+# --- JavaScript bileşeni (oyun + gizli textarea) ---
 components.html(
     """
     <div id="pvt-container" style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
@@ -37,7 +38,7 @@ components.html(
             <div id="progress" style="margin-top: 20px; font-size: 14px; color: gray;"></div>
         </div>
     </div>
-    <!-- Gizli textarea: sonuçları buraya yazacağız, Streamlit'in okuyabilmesi için -->
+    <!-- Gizli textarea: sonuçları Streamlit'e iletmek için -->
     <textarea id="resultData" style="display:none;"></textarea>
 
     <script>
@@ -64,7 +65,6 @@ components.html(
                 completed_at: new Date().toISOString()
             };
             hiddenTextarea.value = JSON.stringify(result);
-            // Streamlit'in textarea değişikliğini algılaması için change event tetikle
             hiddenTextarea.dispatchEvent(new Event('change', { bubbles: true }));
         }
         
@@ -154,20 +154,14 @@ components.html(
     height=550,
 )
 
-# Bu textarea, yukarıdaki components.html içindeki gizli textarea ile aynı değil.
-# Streamlit'in kendi textarea'sını oluşturup onu da gizleyelim.
-# Ama daha önceki hatayı almamak için height=0 KULLANMAYACAĞIZ.
-# Bunun yerine label_visibility="collapsed" ve CSS ile tamamen gizleyelim.
-
+# --- Gizli textarea (Streamlit tarafında) sonuçları yakalamak için ---
 with st.container():
-    # Gerçekten gizli bir textarea - kullanıcı asla görmez
     result_json = st.text_area(
-        "###",  # Boş label, görünmeyecek
+        "###",
         key="pvt_hidden_result",
         label_visibility="collapsed",
-        height=1  # Minimum 1 piksel, hata vermez
+        height=1
     )
-    # CSS ile tamamen gizle
     st.markdown(
         """
         <style>
@@ -179,20 +173,23 @@ with st.container():
         unsafe_allow_html=True
     )
 
-# Gelen veriyi işle
+# --- Gelen sonucu session_state'e yaz ---
 if result_json:
     try:
-        import json
         data = json.loads(result_json)
-        if send_result_to_backend(data, RESULT_KEY):
-            st.success("✅ PVT sonucu kaydedildi!", icon="✅")
-            st.rerun()
-    except:
-        pass
+        st.session_state["pvt_result"] = data
+        st.success("✅ PVT sonucu kaydedildi! Şimdi Dashboard'a gidebilirsiniz.")
+        # Debug: session_state içeriğini göster (isteğe bağlı)
+        with st.expander("🔍 Debug: session_state içeriği (geçici)"):
+            st.json(st.session_state.get("pvt_result"))
+        # Sayfayı yenile ki artık sonuç gösterilsin
+        st.rerun()
+    except Exception as e:
+        st.error(f"Sonuç işlenirken hata: {e}")
 
-# Sonuçları göster
-final = get_result(RESULT_KEY)
-if final:
+# --- Mevcut sonucu göster (eğer session_state'de varsa) ---
+if st.session_state.get("pvt_result"):
+    final = st.session_state["pvt_result"]
     st.success("### 🎯 Son Test Sonucunuz")
     col1, col2 = st.columns(2)
     col1.metric("Ortalama Tepki Süresi", f"{final['average']} ms")
