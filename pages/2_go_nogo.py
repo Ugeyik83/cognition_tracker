@@ -1,105 +1,89 @@
-"""
-pages/2_go_nogo.py — Go/No-Go testi, yeni tasarım.
-"""
-
-import json
+# pages/2_go_nogo.py
 import streamlit as st
+import streamlit.components.v1 as components
+from utils.result_handler import send_result_to_backend, get_result, clear_result
 
-import streamlit.components.v1
-from streamlit_javascript import st_javascript
-from utils.js_components import gonogo_component
-from utils.styles import BASE_CSS, page_header, metric_card
-from utils.nav import render_nav
+st.set_page_config(page_title="Go/No-Go Testi", layout="centered")
+st.title("🛑 Go/No-Go Dikkat Testi")
 
-st.set_page_config(page_title="Go/No-Go | CognitionTracker", layout="wide",
-                   initial_sidebar_state="expanded")
-st.html(BASE_CSS)
-render_nav("gonogo")
+RESULT_KEY = "gonogo_result"
 
-if not st.session_state.get("candidate_id"):
-    st.warning("Önce ana sayfadan Operatör ID girin.")
-    st.stop()
+if st.button("🔄 Yeni Test Başlat"):
+    clear_result(RESULT_KEY)
+    st.rerun()
 
-st.html(page_header("Modül 2 — Go / No-Go",
-                         f"Aday: {st.session_state.candidate_id}"),
-            unsafe_allow_html=True)
+components.html(
+    """
+    <div>
+        <h3>Kural: Sadece <span style="color:green;">YEŞİL</span> kutuya tıklayın. Kırmızıya tıklamayın.</h3>
+        <button id="startBtn">Testi Başlat</button>
+        <div id="stimulus" style="width:200px;height:200px;margin:20px auto;background-color:gray;display:flex;align-items:center;justify-content:center;font-size:24px;">?</div>
+        <div id="score">Doğru: 0 | Yanlış: 0</div>
+        <div id="resultArea"></div>
+    </div>
+    <script>
+        let active = false;
+        let correct = 0, incorrect = 0;
+        let currentColor = null;
+        let trialCount = 0;
+        const MAX_TRIALS = 20;
 
-if st.session_state.get("gonogo_result"):
-    r = st.session_state["gonogo_result"]
-    hr  = float(r.get("hit_rate") or 0)
-    fa  = float(r.get("false_alarm_rate") or 0)
-    dp  = float(r.get("dprime") or 0)
-    hr_color = "#00E5A0" if hr > 0.85 else ("#F5A623" if hr > 0.75 else "#FF4D6A")
-    fa_color = "#00E5A0" if fa < 0.10 else ("#F5A623" if fa < 0.20 else "#FF4D6A")
-    dp_color = "#00E5A0" if dp > 2.5  else ("#F5A623" if dp > 1.5  else "#FF4D6A")
+        function showStimulus() {
+            if (!active || trialCount >= MAX_TRIALS) return;
+            const isGo = Math.random() < 0.6; // %60 Go
+            currentColor = isGo ? 'green' : 'red';
+            const stimDiv = document.getElementById('stimulus');
+            stimDiv.style.backgroundColor = currentColor;
+            stimDiv.innerText = isGo ? 'TIKLA!' : 'DOKUNMA!';
+        }
 
-    st.html(f"""
-    <div style="padding:24px;background:#0A0F1E">
-        <div style="background:rgba(0,229,160,0.08);border:1px solid rgba(0,229,160,0.2);
-                    border-radius:12px;padding:16px;margin-bottom:20px;
-                    display:flex;align-items:center;gap:10px">
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M3 9L7 13L15 5" stroke="#00E5A0" stroke-width="2"
-                      stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <span style="font-size:14px;font-weight:600;color:#00E5A0">
-                Modül 2 tamamlandı
-            </span>
-        </div>
-        <div style="display:flex;gap:12px">
-    """)
+        function endTest() {
+            active = false;
+            const resultArea = document.getElementById('resultArea');
+            resultArea.innerHTML = `<textarea id="resultData" style="display:none;">${JSON.stringify({correct: correct, incorrect: incorrect, total: MAX_TRIALS, accuracy: (correct/(correct+incorrect))*100})}</textarea>`;
+            document.getElementById('resultData').dispatchEvent(new Event('change'));
+        }
 
-    st.html(metric_card("HIT RATE",    f"{hr:.0%}", hr_color) +
-        metric_card("FALSE ALARM", f"{fa:.0%}", fa_color) +
-        metric_card("d-prime",     f"{dp:.2f}", dp_color))
-    st.html("</div></div>")
-
-    if st.button("Tekrar yap"):
-        st.session_state["gonogo_result"] = None
-        st.rerun()
-    st.stop()
-
-with st.expander("📋 Test talimatları", expanded=True):
-    st.html("""
-    - 🟢 **Yeşil daire** → **SPACE** tuşuna basın (GO)
-    - 🔴 **Kırmızı daire** → **Basmayın** (NO-GO)
-    - 60 deneme, hızlı ve doğru olun
-    """)
-
-ready = st.checkbox("Talimatları okudum, hazırım.")
-if not ready:
-    st.stop()
-
-st.components.v1.html(gonogo_component(n_trials=60, go_ratio=0.75, stim_ms=800, isi_ms=1200), height=540, scrolling=False)
-
-st.html("""
-<div style="background:rgba(61,139,255,0.06);border:1px solid rgba(61,139,255,0.15);
-            border-radius:10px;padding:12px 16px;margin:12px 0;
-            font-size:13px;color:#8B95B0">
-    ⏳ Test devam ediyor. Bittikten sonra aşağıdaki butona basın.
-</div>
-""")
-
-if st.button("✅ Test bitti — Sonucu Al", type="primary", use_container_width=True):
-    raw = st.query_params.get("gonogo_result", None)
-    if raw and raw not in ("null", "undefined", None):
-        try:
-            import urllib.parse
-            raw = urllib.parse.unquote(raw)
-            data = json.loads(raw)
-            s = data.get("summary", {})
-            st.session_state["gonogo_result"] = {
-                "hit_rate":         s.get("hit_rate"),
-                "false_alarm_rate": s.get("false_alarm_rate"),
-                "omission_rate":    s.get("omission_rate"),
-                "dprime":           s.get("dprime"),
-                "mean_rt_go":       s.get("mean_rt_go"),
-                "n_go":             s.get("n_go"),
-                "n_nogo":           s.get("n_nogo"),
+        function handleClick() {
+            if (!active) return;
+            if (currentColor === 'green') {
+                correct++;
+                document.getElementById('score').innerHTML = `Doğru: ${correct} | Yanlış: ${incorrect}`;
+            } else if (currentColor === 'red') {
+                incorrect++;
+                document.getElementById('score').innerHTML = `Doğru: ${correct} | Yanlış: ${incorrect}`;
             }
-            if "gonogo_result" in st.query_params: del st.query_params["gonogo_result"]
-            st.rerun()
-        except (json.JSONDecodeError, TypeError):
-            st.error("Sonuç okunamadı.")
-    else:
-        st.warning("Henüz sonuç yok.")
+            trialCount++;
+            if (trialCount >= MAX_TRIALS) {
+                endTest();
+            } else {
+                setTimeout(showStimulus, 500);
+            }
+        }
+
+        document.getElementById('startBtn').onclick = () => {
+            active = true;
+            correct = 0; incorrect = 0; trialCount = 0;
+            document.getElementById('score').innerHTML = `Doğru: 0 | Yanlış: 0`;
+            showStimulus();
+        };
+        document.getElementById('stimulus').onclick = handleClick;
+    </script>
+    """,
+    height=500,
+)
+
+result_data = st.text_area("", key="gonogo_textarea", label_visibility="collapsed")
+if result_data:
+    try:
+        import json
+        data = json.loads(result_data)
+        send_result_to_backend(data, RESULT_KEY)
+        st.session_state.gonogo_textarea = ""
+    except:
+        pass
+
+res = get_result(RESULT_KEY)
+if res:
+    st.subheader("📊 Son Go/No-Go Sonucu")
+    st.json(res)

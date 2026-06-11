@@ -1,127 +1,121 @@
-"""
-pages/3_dual_task.py — Dual Task testi, yeni tasarım.
-"""
-
-import json
+# pages/3_dual_task.py
 import streamlit as st
+import streamlit.components.v1 as components
+from utils.result_handler import send_result_to_backend, get_result, clear_result
 
-import streamlit.components.v1
-from streamlit_javascript import st_javascript
-from utils.js_components import dual_task_component
-from utils.styles import BASE_CSS, page_header, metric_card
-from utils.nav import render_nav
-from utils.data_logger import save_session
+st.set_page_config(page_title="İkili Görev Testi", layout="centered")
+st.title("🎯 İkili Görev (Dual Task)")
 
-st.set_page_config(page_title="Dual Task | CognitionTracker", layout="wide",
-                   initial_sidebar_state="expanded")
-st.html(BASE_CSS)
-render_nav("dual")
+RESULT_KEY = "dual_result"
 
-if not st.session_state.get("candidate_id"):
-    st.warning("Önce ana sayfadan Operatör ID girin.")
-    st.stop()
+if st.button("🔄 Yeni Test Başlat"):
+    clear_result(RESULT_KEY)
+    st.rerun()
 
-st.html(page_header("Modül 3 — Çift Görev (Dual Task)",
-                         f"Aday: {st.session_state.candidate_id}"))
+components.html(
+    """
+    <div>
+        <h3>🔴 Hareketli hedefe tıklayın ⚫ Siyah noktalara tıklamayın.</h3>
+        <button id="startBtn">Testi Başlat</button>
+        <canvas id="gameCanvas" width="600" height="400" style="border:1px solid black; margin-top:10px;"></canvas>
+        <div id="scoreDisplay">Puan: 0 | Hata: 0</div>
+        <div id="resultArea"></div>
+    </div>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let active = false;
+        let score = 0;
+        let mistakes = 0;
+        let target = {x: 300, y: 200, size: 30};
+        let distractor = {x: 100, y: 100, size: 20};
+        let targetDX = 2, targetDY = 1.5;
+        let distDX = 1.8, distDY = 1.2;
+        let animationId = null;
+        const MAX_CLICKS = 30;
 
-if st.session_state.get("dual_result"):
-    r = st.session_state["dual_result"]
-    pa = float(r.get("primary_accuracy") or 0)
-    sa = float(r.get("secondary_accuracy") or 0)
-    pa_color = "#00E5A0" if pa > 0.80 else ("#F5A623" if pa > 0.65 else "#FF4D6A")
-    sa_color = "#00E5A0" if sa > 0.70 else ("#F5A623" if sa > 0.55 else "#FF4D6A")
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'red';
+            ctx.beginPath();
+            ctx.arc(target.x, target.y, target.size/2, 0, Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(distractor.x, distractor.y, distractor.size/2, 0, Math.PI*2);
+            ctx.fill();
+        }
 
-    st.html(f"""
-    <div style="padding:24px;background:#0A0F1E">
-        <div style="background:rgba(0,229,160,0.08);border:1px solid rgba(0,229,160,0.2);
-                    border-radius:12px;padding:16px;margin-bottom:20px;
-                    display:flex;align-items:center;gap:10px">
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M3 9L7 13L15 5" stroke="#00E5A0" stroke-width="2"
-                      stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <span style="font-size:14px;font-weight:600;color:#00E5A0">
-                Modül 3 tamamlandı
-            </span>
-        </div>
-        <div style="display:flex;gap:12px">
-    """)
+        function update() {
+            if (!active) return;
+            target.x += targetDX;
+            target.y += targetDY;
+            if (target.x - target.size/2 <= 0 || target.x + target.size/2 >= canvas.width) targetDX *= -1;
+            if (target.y - target.size/2 <= 0 || target.y + target.size/2 >= canvas.height) targetDY *= -1;
+            
+            distractor.x += distDX;
+            distractor.y += distDY;
+            if (distractor.x - distractor.size/2 <= 0 || distractor.x + distractor.size/2 >= canvas.width) distDX *= -1;
+            if (distractor.y - distractor.size/2 <= 0 || distractor.y + distractor.size/2 >= canvas.height) distDY *= -1;
+            
+            draw();
+            animationId = requestAnimationFrame(update);
+        }
 
-    st.html(metric_card("BİRİNCİL GÖREV", f"{pa:.0%}", pa_color) +
-        metric_card("İKİNCİL GÖREV",  f"{sa:.0%}", sa_color))
-    st.html("</div>")
+        function endTest() {
+            active = false;
+            if (animationId) cancelAnimationFrame(animationId);
+            const resultArea = document.getElementById('resultArea');
+            resultArea.innerHTML = `<textarea id="resultData" style="display:none;">${JSON.stringify({score: score, mistakes: mistakes, totalAttempts: score+mistakes, accuracy: (score/(score+mistakes))*100})}</textarea>`;
+            document.getElementById('resultData').dispatchEvent(new Event('change'));
+        }
 
-    # CSV kaydet
-    if (st.session_state.get("pvt_result") and
-        st.session_state.get("gonogo_result") and
-        not st.session_state.get("session_saved")):
-        path = save_session(
-            candidate_id=st.session_state["candidate_id"],
-            pvt=st.session_state["pvt_result"],
-            gonogo=st.session_state["gonogo_result"],
-            dual=st.session_state["dual_result"],
-        )
-        st.session_state["session_saved"] = True
-        st.html(f"""
-        <div style="margin-top:16px;background:rgba(61,139,255,0.08);
-                    border:1px solid rgba(61,139,255,0.2);border-radius:10px;
-                    padding:12px 16px;font-size:13px;color:#8B95B0">
-            💾 Sonuçlar kaydedildi: <code style="color:#3D8BFF">{path}</code>
-        </div>
-        """)
-
-    st.html("</div>")
-
-    if st.button("Tekrar yap"):
-        st.session_state["dual_result"] = None
-        st.session_state["session_saved"] = False
-        st.rerun()
-    st.stop()
-
-with st.expander("📋 Test talimatları", expanded=True):
-    st.html("""
-    **Üst alan — Renk görevi (sürekli):**
-    - 🟠 Turuncu daire → **SPACE**
-    - Mavi / Mor daire → Basma
-
-    **Alt alan — Şekil görevi (aralıklı):**
-    - ● Daire → **D** tuşu &nbsp;|&nbsp; ■ Kare → **K** tuşu
-
-    İki göreve aynı anda dikkat edin. Süre: **90 saniye**
-    """)
-
-ready = st.checkbox("Talimatları okudum, hazırım.")
-if not ready:
-    st.stop()
-
-st.components.v1.html(dual_task_component(duration_ms=90_000, shape_interval_min_ms=2000,
-                        shape_interval_max_ms=4500, shape_duration_ms=1500), height=580, scrolling=False)
-
-st.html("""
-<div style="background:rgba(61,139,255,0.06);border:1px solid rgba(61,139,255,0.15);
-            border-radius:10px;padding:12px 16px;margin:12px 0;
-            font-size:13px;color:#8B95B0">
-    ⏳ Test devam ediyor. Bittikten sonra aşağıdaki butona basın.
-</div>
-""")
-
-if st.button("✅ Test bitti — Sonucu Al", type="primary", use_container_width=True):
-    raw = st.query_params.get("dual_result", None)
-    if raw and raw not in ("null", "undefined", None):
-        try:
-            import urllib.parse
-            raw = urllib.parse.unquote(raw)
-            data = json.loads(raw)
-            s = data.get("summary", {})
-            st.session_state["dual_result"] = {
-                "primary_accuracy":   s.get("primary_accuracy"),
-                "secondary_accuracy": s.get("secondary_accuracy"),
-                "primary_correct":    s.get("primary_correct"),
-                "secondary_correct":  s.get("secondary_correct"),
+        function handleCanvasClick(e) {
+            if (!active) return;
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
+            const distToTarget = Math.hypot(mouseX - target.x, mouseY - target.y);
+            const distToDist = Math.hypot(mouseX - distractor.x, mouseY - distractor.y);
+            
+            if (distToTarget <= target.size/2) {
+                score++;
+                document.getElementById('scoreDisplay').innerHTML = `Puan: ${score} | Hata: ${mistakes}`;
+                // hedef küçülüp zorlaşabilir - opsiyonel
+                if (score + mistakes >= MAX_CLICKS) endTest();
+            } else if (distToDist <= distractor.size/2) {
+                mistakes++;
+                document.getElementById('scoreDisplay').innerHTML = `Puan: ${score} | Hata: ${mistakes}`;
+                if (score + mistakes >= MAX_CLICKS) endTest();
             }
-            if "dual_result" in st.query_params: del st.query_params["dual_result"]
-            st.rerun()
-        except (json.JSONDecodeError, TypeError):
-            st.error("Sonuç okunamadı.")
-    else:
-        st.warning("Henüz sonuç yok.")
+        }
+
+        document.getElementById('startBtn').onclick = () => {
+            if (animationId) cancelAnimationFrame(animationId);
+            active = true;
+            score = 0; mistakes = 0;
+            document.getElementById('scoreDisplay').innerHTML = `Puan: 0 | Hata: 0`;
+            target = {x: 300, y: 200, size: 30};
+            distractor = {x: 100, y: 100, size: 20};
+            update();
+        };
+        canvas.addEventListener('click', handleCanvasClick);
+    </script>
+    """,
+    height=550,
+)
+
+result_data = st.text_area("", key="dual_textarea", label_visibility="collapsed")
+if result_data:
+    try:
+        import json
+        data = json.loads(result_data)
+        send_result_to_backend(data, RESULT_KEY)
+        st.session_state.dual_textarea = ""
+    except:
+        pass
+
+res = get_result(RESULT_KEY)
+if res:
+    st.subheader("📊 Son İkili Görev Sonucu")
+    st.json(res)
