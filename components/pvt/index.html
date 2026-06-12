@@ -35,7 +35,7 @@
   <div id="msg">Testi başlatmak için butona basın.</div>
   <div id="prog"></div>
 </div>
-<button id="btn">Pratiğe Başla</button>
+<button id="btn" disabled>Pratiğe Başla</button>
 
 <script>
 (function () {
@@ -87,7 +87,7 @@
   }
   function fsMs()      { return (args && args.false_start_ms) || 100; }
   function pracN()     { return (args && args.practice)       || 3;   }
-  function durMs()     { return (args && args.duration_ms)    || 180000; }
+  function durMs()     { return (args && args.duration_ms)    || 30000; } // 30 saniye, gelecekte 3 dakika olabilir
 
   function arm() {
     waiting = true; t0 = null;
@@ -188,6 +188,15 @@
     }
     requestAnimationFrame(loop);
   }
+
+  // args geldiğinde butonu aç; 3 sn içinde gelmezse yine aç
+  var argWait = setInterval(function () {
+    if (args !== null) { clearInterval(argWait); btn.disabled = false; }
+  }, 100);
+  setTimeout(function () { clearInterval(argWait); btn.disabled = false; }, 3000);
+
+  
+
 
   ready();
 })();

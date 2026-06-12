@@ -30,15 +30,15 @@ GONOGO = {
 
 # ── Dual Task (Baddeley 1992) ────────────────────────────────────
 DUAL = {
-    "baseline_ms": 30_000,         # tek-görev baseline (yalnız renk) → dual-task cost
-    "dual_ms": 90_000,             # çift görev ana blok
+    "baseline_ms": 15_000,         # tek-görev baseline (yalnız renk) → dual-task cost normal 30
+    "dual_ms": 30_000,             # çift görev ana blok / normal 90
     "color_interval_ms": 1_800,    # renk uyaranı süresi = yanıt penceresi
     "target_ratio": 0.33,          # turuncu oranı
     "shape_min_ms": 2_000,         # ikincil uyaran asenkron aralığı
     "shape_max_ms": 4_500,
     "shape_visible_ms": 1_500,
     "shape_window_ms": 2_000,      # şekil başlangıcından itibaren yanıt penceresi
-    "practice_ms": 15_000,
+    "practice_ms": 10_000,         # pratik süresi / normal 15
 }
 
 # ── Dikkat Bayrağı eşikleri (README tablolarıyla birebir) ────────
