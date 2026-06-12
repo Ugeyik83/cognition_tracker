@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: transparent; color: #F0F4FF; }
+  #wrap { background: #10182B; border: 1px solid #1E2A45; border-radius: 14px; padding: 20px; text-align: center; }
+  #phase { font-size: 11px; letter-spacing: 1px; color: #8B95B0; margin-bottom: 8px; }
+  #stim {
+    width: 160px; height: 160px; margin: 0 auto;
+    border-radius: 12px; background: #1A2235;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 700; user-select: none;
+  }
+  .legend { font-size: 12px; color: #8B95B0; margin: 8px 0; }
+  #score { font-size: 14px; color: #8B95B0; margin-top: 6px; }
+  #msg  { margin-top: 8px; font-size: 14px; color: #F5A623; min-height: 18px; }
+  #prog { margin-top: 4px; font-size: 12px; color: #8B95B0; min-height: 16px; }
+  #btn  {
+    display: block; width: 100%; margin-top: 14px;
+    background: #3D8BFF; color: #fff; border: none;
+    padding: 12px; font-size: 16px; font-weight: 600;
+    border-radius: 10px; cursor: pointer;
+  }
+  #btn:disabled { background: #1A2235; color: #4A526A; cursor: default; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="phase">GO/NO-GO — İNHİBİSYON KONTROLÜ</div>
+  <div id="stim">+</div>
+  <div class="legend">YEŞİL → <kbd>SPACE</kbd> &nbsp;·&nbsp; KIRMIZI → basma</div>
+  <div id="score"></div>
+  <div id="msg">Testi başlatmak için butona basın.</div>
+  <div id="prog"></div>
+</div>
+<button id="btn">Pratiğe Başla</button>
+
+<script>
+(function () {
+  var args = null, done = false, started = false;
+
+  function ready() {
+    window.parent.postMessage(
+      { isStreamlitMessage: true, type: "streamlit:componentReady", apiVersion: 1 }, "*"
+    );
+  }
+  function sendValue(val) {
+    window.parent.postMessage(
+      { isStreamlitMessage: true, type: "streamlit:setComponentValue",
+        value: val, dataType: "json" }, "*"
+    );
+  }
+  window.addEventListener("message", function (e) {
+    if (!e.data.isStreamlitMessage) return;
+    if (e.data.type === "streamlit:render") { args = e.data.args || {}; }
+  });
+
+  var stimEl  = document.getElementById("stim");
+  var msg     = document.getElementById("msg");
+  var prog    = document.getElementById("prog");
+  var score   = document.getElementById("score");
+  var btn     = document.getElementById("btn");
+  var phaseEl = document.getElementById("phase");
+
+  var mode = null; // "practice" | "main"
+  var seq = [], idx = 0, trials = [];
+  var cur = null, t0 = null, responded = false;
+  var winTimer = null, itiTimer = null;
+
+  function cfg(k, def) { return (args && args[k] != null) ? args[k] : def; }
+
+  /* Fisher–Yates karıştırma, sabit Go/NoGo sayısı */
+  function buildSeq(nGo, nNoGo) {
+    var a = Array(nGo).fill(true).concat(Array(nNoGo).fill(false));
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+    }
+    return a;
+  }
+
+  function showFix() { stimEl.style.background = "#1A2235"; stimEl.textContent = "+"; }
+
+  function trial() {
+    if (idx >= seq.length) { endBlock(); return; }
+    cur = seq[idx]; responded = false;
+    var iti = Math.random() * (cfg("iti_max", 1300) - cfg("iti_min", 900)) + cfg("iti_min", 900);
+    itiTimer = setTimeout(function () {
+      if (!mode) return;
+      stimEl.style.background = cur ? "#2EBD6B" : "#E5484D";
+      stimEl.textContent = cur ? "BAS" : "DUR";
+      t0 = performance.now();
+      /* Uyaran cfg("stim",500) ms sonra kaybolur */
+      setTimeout(showFix, cfg("stim", 500));
+      /* Yanıt penceresi */
+      winTimer = setTimeout(function () { finishTrial(null); }, cfg("win", 1000));
+    }, iti);
+  }
+
+  function finishTrial(rt) {
+    clearTimeout(winTimer); clearTimeout(itiTimer);
+    var rec = { is_go: cur, responded: responded, rt: rt };
+    if (mode === "main") trials.push(rec);
+    if (mode === "practice") {
+      var ok = (cur && responded) || (!cur && !responded);
+      msg.textContent = ok ? "✓ Doğru" : "✗ Hatalı";
+    }
+    idx++;
+    prog.textContent = "Deneme: " + idx + " / " + seq.length;
+    score.textContent = mode === "main"
+      ? ("Tamamlanan: " + idx + " / " + seq.length) : "";
+    showFix(); trial();
+  }
+
+  window.addEventListener("keydown", function (e) {
+    if (!mode || e.code !== "Space") return;
+    e.preventDefault();
+    if (t0 === null || responded) return;
+    var rt = Math.round(performance.now() - t0);
+    if (rt > cfg("win", 1000)) return;
+    responded = true;
+    finishTrial(rt);
+  });
+
+  function startMain() {
+    mode = "main"; idx = 0; trials = [];
+    var nGo = cfg("n_go", 45), nNoGo = cfg("n_nogo", 15);
+    seq = buildSeq(nGo, nNoGo);
+    phaseEl.textContent = "ANA BLOK · " + seq.length + " DENEME";
+    msg.textContent = "Ana blok: geri bildirim verilmez.";
+    trial();
+  }
+
+  function endBlock() {
+    if (mode === "practice") { startMain(); return; }
+    mode = null; done = true;
+    stimEl.textContent = "Bitti ✓"; msg.textContent = "Sonuçlar kaydediliyor…";
+    sendValue({ run_id: cfg("run_id", "x"), test: "gonogo", trials: trials, device: {} });
+  }
+
+  btn.onclick = function () {
+    if (started) return; started = true; btn.disabled = true;
+    mode = "practice";
+    var pN = cfg("practice", 8);
+    var pGo = Math.round(pN * 0.75);
+    seq = buildSeq(pGo, pN - pGo); idx = 0;
+    phaseEl.textContent = "PRATİK · " + seq.length + " DENEME";
+    msg.textContent = "Pratik başladı."; trial();
+  };
+
+  ready();
+})();
+</script>
+</body>
+</html>

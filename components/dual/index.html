@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: transparent; color: #F0F4FF; }
+  #wrap { background: #10182B; border: 1px solid #1E2A45; border-radius: 14px; padding: 18px; }
+  #phase { font-size: 11px; letter-spacing: 1px; color: #8B95B0; margin-bottom: 10px; text-align: center; }
+  .panels { display: flex; gap: 12px; }
+  .panel {
+    flex: 1; background: #0A0F1E; border-radius: 12px; padding: 14px;
+    text-align: center;
+  }
+  .panel-label { font-size: 11px; color: #8B95B0; margin-bottom: 8px; }
+  #colorBox {
+    width: 100px; height: 100px; margin: 0 auto;
+    border-radius: 50px; background: #555; transition: background 0.05s;
+  }
+  #shapeBox {
+    width: 100px; height: 100px; margin: 0 auto;
+    border-radius: 12px; background: #1A2235;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 52px; color: #FFD966;
+  }
+  .hint { font-size: 11px; color: #8B95B0; margin-top: 6px; }
+  #msg  { margin-top: 10px; font-size: 13px; color: #F5A623; text-align: center; min-height: 16px; }
+  #prog { margin-top: 4px;  font-size: 12px; color: #8B95B0;  text-align: center; min-height: 14px; }
+  #btn  {
+    display: block; width: 100%; margin-top: 12px;
+    background: #3D8BFF; color: #fff; border: none;
+    padding: 12px; font-size: 16px; font-weight: 600;
+    border-radius: 10px; cursor: pointer;
+  }
+  #btn:disabled { background: #1A2235; color: #4A526A; cursor: default; }
+  kbd { background: #1A2235; border-radius: 4px; padding: 1px 5px; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="phase">DUAL TASK — BÖLÜNMÜŞ DİKKAT</div>
+  <div class="panels">
+    <div class="panel">
+      <div class="panel-label">RENK (sürekli)</div>
+      <div id="colorBox"></div>
+      <div class="hint">Turuncu → <kbd>SPACE</kbd></div>
+    </div>
+    <div class="panel">
+      <div class="panel-label">ŞEKİL (aralıklı)</div>
+      <div id="shapeBox">·</div>
+      <div class="hint">● → <kbd>D</kbd> · ■ → <kbd>K</kbd></div>
+    </div>
+  </div>
+  <div id="msg">Testi başlatmak için butona basın.</div>
+  <div id="prog"></div>
+</div>
+<button id="btn">Pratiğe Başla</button>
+
+<script>
+(function () {
+  var args = null, done = false, started = false;
+
+  function ready() {
+    window.parent.postMessage(
+      { isStreamlitMessage: true, type: "streamlit:componentReady", apiVersion: 1 }, "*"
+    );
+  }
+  function sendValue(val) {
+    window.parent.postMessage(
+      { isStreamlitMessage: true, type: "streamlit:setComponentValue",
+        value: val, dataType: "json" }, "*"
+    );
+  }
+  window.addEventListener("message", function (e) {
+    if (!e.data.isStreamlitMessage) return;
+    if (e.data.type === "streamlit:render") { args = e.data.args || {}; }
+  });
+
+  var colorBox = document.getElementById("colorBox");
+  var shapeBox = document.getElementById("shapeBox");
+  var msg      = document.getElementById("msg");
+  var prog     = document.getElementById("prog");
+  var btn      = document.getElementById("btn");
+  var phaseEl  = document.getElementById("phase");
+
+  function cfg(k, def) { return (args && args[k] != null) ? args[k] : def; }
+
+  /* Renk, şekil, blok verileri */
+  var mode = null;   // "practice"|"baseline"|"dual"
+  var baselineColor = [], dualColor = [], dualShape = [];
+  var curColor = null;  // {is_target, t0, responded, rt}
+  var curShape = null;  // {shape, t0, answered}
+  var colorTimer = null, shapeTimer = null, shapeHideTimer = null;
+  var blockEnd = 0, clockTimer = null;
+
+  function colorTick() {
+    if (curColor && mode !== "practice") pushColor(curColor);
+    var isTarget = Math.random() < cfg("target_ratio", 0.33);
+    var colors = isTarget
+      ? "#FF8C42"
+      : (Math.random() < 0.5 ? "#3D8BFF" : "#A855F7");
+    colorBox.style.background = colors;
+    curColor = { is_target: isTarget, t0: performance.now(), responded: false, rt: null };
+  }
+
+  function pushColor(c) {
+    var rec = { is_target: c.is_target, responded: c.responded, rt: c.rt };
+    if (mode === "baseline") baselineColor.push(rec);
+    else if (mode === "dual") dualColor.push(rec);
+  }
+
+  function scheduleShape() {
+    if (mode !== "dual" && mode !== "practice") return;
+    var delay = Math.random() * (cfg("shape_max", 4500) - cfg("shape_min", 2000)) + cfg("shape_min", 2000);
+    shapeTimer = setTimeout(function () {
+      if (mode !== "dual" && mode !== "practice") return;
+      var isCircle = Math.random() < 0.5;
+      curShape = { shape: isCircle ? "circle" : "square", t0: performance.now(), answered: false };
+      shapeBox.textContent = isCircle ? "●" : "■";
+      clearTimeout(shapeHideTimer);
+      shapeHideTimer = setTimeout(function () { shapeBox.textContent = "·"; }, cfg("shape_vis", 1500));
+      /* Yanıt penceresi dolunca = miss */
+      setTimeout(function () {
+        if (curShape && !curShape.answered) {
+          if (mode === "dual")
+            dualShape.push({ shape: curShape.shape, key: null, correct: false, rt: null });
+          curShape = null;
+        }
+        scheduleShape();
+      }, cfg("shape_win", 2000));
+    }, delay);
+  }
+
+  window.addEventListener("keydown", function (e) {
+    if (!mode) return;
+    if (e.code === "Space") {
+      e.preventDefault();
+      if (curColor && !curColor.responded) {
+        curColor.responded = true;
+        curColor.rt = Math.round(performance.now() - curColor.t0);
+        if (mode === "practice")
+          msg.textContent = curColor.is_target ? "✓ Renk doğru" : "✗ Turuncu değildi";
+      }
+    }
+    var k = e.key.toLowerCase();
+    if (k === "d" || k === "k") {
+      if (curShape && !curShape.answered) {
+        curShape.answered = true;
+        var ok = (k === "d" && curShape.shape === "circle") ||
+                 (k === "k" && curShape.shape === "square");
+        var rec = { shape: curShape.shape, key: k, correct: ok,
+                    rt: Math.round(performance.now() - curShape.t0) };
+        if (mode === "dual") dualShape.push(rec);
+        if (mode === "practice") msg.textContent = ok ? "✓ Şekil doğru" : "✗ Yanlış tuş";
+        curShape = null;
+      }
+    }
+  });
+
+  function startBlock(m, durMs, label, withShapes) {
+    mode = m; phaseEl.textContent = label;
+    curColor = null; curShape = null; shapeBox.textContent = "·";
+    clearInterval(colorTimer); clearTimeout(shapeTimer); clearTimeout(shapeHideTimer);
+    colorTimer = setInterval(colorTick, cfg("color_interval", 1800)); colorTick();
+    if (withShapes) scheduleShape();
+    blockEnd = performance.now() + durMs;
+    clearInterval(clockTimer);
+    clockTimer = setInterval(function () {
+      var left = Math.max(0, Math.ceil((blockEnd - performance.now()) / 1000));
+      prog.textContent = "Kalan: " + left + " sn";
+      if (left <= 0) nextBlock();
+    }, 250);
+  }
+
+  function nextBlock() {
+    clearInterval(clockTimer); clearInterval(colorTimer);
+    clearTimeout(shapeTimer); clearTimeout(shapeHideTimer);
+    if (curColor && mode !== "practice") pushColor(curColor);
+    if (mode === "practice") {
+      msg.textContent = "Baseline: YALNIZ renk görevi (30 sn). Karşılaştırma için gerekli.";
+      startBlock("baseline", cfg("baseline_ms", 30000), "BASELINE · TEK GÖREV", false);
+    } else if (mode === "baseline") {
+      msg.textContent = "Çift görev başladı: iki kutuyu da izleyin (90 sn).";
+      startBlock("dual", cfg("dual_ms", 90000), "ÇİFT GÖREV · 90 SN", true);
+    } else {
+      mode = null; done = true;
+      colorBox.style.background = "#555"; shapeBox.textContent = "·";
+      msg.textContent = "Sonuçlar kaydediliyor…"; prog.textContent = "";
+      sendValue({
+        run_id: cfg("run_id", "x"), test: "dual",
+        baseline_color: baselineColor, dual_color: dualColor, dual_shape: dualShape,
+        device: {}
+      });
+    }
+  }
+
+  btn.onclick = function () {
+    if (started) return; started = true; btn.disabled = true;
+    msg.textContent = "Pratik: turuncu→SPACE, ●→D, ■→K (geri bildirimli).";
+    startBlock("practice", cfg("practice_ms", 15000), "PRATİK · 15 SN", true);
+  };
+
+  ready();
+})();
+</script>
+</body>
+</html>
