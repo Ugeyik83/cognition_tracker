@@ -117,7 +117,14 @@
   window.addEventListener("keydown", function (e) {
     if (!mode || e.code !== "Space") return;
     e.preventDefault();
-    if (t0 === null || responded) return;
+    if (t0 === null) {
+        // Uyaran henüz çıkmadı = erken basma
+        if (mode === "main") trials.push({is_go: cur, responded: true, rt: 0, early: true});
+        msg.textContent = "⚠️ Erken basma! Uyaranı bekleyin.";
+        return;
+    }
+    if (responded) return;
+    
     var rt = Math.round(performance.now() - t0);
     if (rt > cfg("win", 1000)) return;
     responded = true;

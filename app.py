@@ -16,6 +16,7 @@ from core.data_logger import candidate_history, export_csv, load_all, save_sessi
 from core.scoring import (evaluate_session, intra_individual_z, score_dual,
                           score_gonogo, score_pvt)
 from core.ui import FLAG_BADGE, header, inject_css, stepper
+from core.data_logger import RESULTS_DIR
 
 st.set_page_config(
     page_title="CognitionTracker",
@@ -24,6 +25,12 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 inject_css()
+
+# Her sayfada ana sayfa butonu (results ve admin hariç zaten var)
+if SS.stage not in ("welcome",):
+    if st.sidebar.button("🏠 Ana Sayfa"):
+        reset_session()
+        st.rerun()
 
 # ── Session state başlatma ────────────────────────────────────────
 DEFAULTS = {
@@ -139,6 +146,9 @@ def view_welcome():
 def view_test(stage: str):
     title, comp_fn, scorer, result_key, next_stage = TESTS[stage]
     header(SS.candidate_id)
+    if st.button("← Ana Sayfa", key=f"home_{SS.stage}"):
+        reset_session()
+        st.rerun()
     stepper(stage)
     st.markdown(f"#### {title}")
 
@@ -188,6 +198,9 @@ def view_test(stage: str):
 # ══ SONUÇ EKRANI ══════════════════════════════════════════════════
 def view_results():
     header(SS.candidate_id)
+    if st.button("← Ana Sayfa", key=f"home_{SS.stage}"):
+        reset_session()
+        st.rerun()
     pvt, gng, dual = SS.pvt_result, SS.gonogo_result, SS.dual_result
 
     # Otomatik kayıt (try/except: Streamlit Cloud ephemeral FS'de sessizce devam eder)
@@ -282,7 +295,12 @@ def view_admin():
         )
 
         st.markdown("#### 📈 Operatör Trend")
-        cand   = st.selectbox("Operatör", sorted(df["candidate_id"].unique()))
+        kandidatlar = sorted(df["candidate_id"].dropna().unique().tolist())
+        if not kandidatlar:
+            st.info("Henüz operatör kaydı yok.")
+        else:
+            cand = st.selectbox("Operatör", kandidatlar)
+
         metric = st.selectbox("Metrik", [
             "pvt_mean_rt", "pvt_lapses", "gng_dprime",
             "dual_primary_acc", "dual_task_cost",
@@ -295,6 +313,26 @@ def view_admin():
             st.plotly_chart(fig, use_container_width=True)
         else:
             st.caption("Trend için en az 2 kayıt gerekir.")
+
+    st.divider()
+    st.markdown("#### 🗑️ Kayıt Sil")
+    col_a, col_b = st.columns(2)
+    with col_a:
+        sil_aday = st.selectbox("Silinecek operatör", ["— seçin —"] + kandidatlar, key="sil_sec")
+        if st.button("Bu adayı sil", type="secondary"):
+            if sil_aday != "— seçin —":
+                for p in sorted(RESULTS_DIR.glob(f"{sil_aday}_*.csv")):
+                    p.unlink()
+                st.success(f"{sil_aday} silindi.")
+                st.rerun()
+    with col_b:
+        st.write("")
+        st.write("")
+        if st.button("⚠️ Tüm kayıtları sil", type="secondary"):
+            for p in RESULTS_DIR.glob("*.csv"):
+                p.unlink()
+            st.success("Tüm kayıtlar silindi.")
+            st.rerun()
 
     if st.button("← Çıkış"):
         SS.stage = "welcome"
