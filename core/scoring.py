@@ -130,18 +130,20 @@ def flag_status(metric_key: str, value) -> str:
 
 
 def evaluate_session(pvt: dict, gng: dict, dual: dict) -> dict:
-    """Tüm oturumun metrik→durum haritası."""
+    """Tüm oturumun metrik→durum haritası. Eksik testler n/a olarak gösterilir."""
+    pvt  = pvt  or {}
+    gng  = gng  or {}
+    dual = dual or {}
     return {
-        "pvt_mean_rt":        (pvt.get("mean_rt"),          flag_status("pvt_mean_rt", pvt.get("mean_rt"))),
-        "pvt_lapses":         (pvt.get("lapses"),           flag_status("pvt_lapses", pvt.get("lapses"))),
+        "pvt_mean_rt":        (pvt.get("mean_rt"),          flag_status("pvt_mean_rt",  pvt.get("mean_rt"))),
+        "pvt_lapses":         (pvt.get("lapses"),           flag_status("pvt_lapses",   pvt.get("lapses"))),
         "pvt_false_starts":   (pvt.get("false_starts"),     flag_status("pvt_false_starts", pvt.get("false_starts"))),
         "gng_hit_rate":       (gng.get("hit_rate"),         flag_status("gng_hit_rate", gng.get("hit_rate"))),
-        "gng_far":            (gng.get("false_alarm_rate"), flag_status("gng_far", gng.get("false_alarm_rate"))),
-        "gng_dprime":         (gng.get("dprime"),           flag_status("gng_dprime", gng.get("dprime"))),
-        "dual_primary_acc":   (dual.get("primary_acc"),     flag_status("dual_primary_acc", dual.get("primary_acc"))),
+        "gng_far":            (gng.get("false_alarm_rate"), flag_status("gng_far",      gng.get("false_alarm_rate"))),
+        "gng_dprime":         (gng.get("dprime"),           flag_status("gng_dprime",   gng.get("dprime"))),
+        "dual_primary_acc":   (dual.get("primary_acc"),     flag_status("dual_primary_acc",   dual.get("primary_acc"))),
         "dual_secondary_acc": (dual.get("secondary_acc"),   flag_status("dual_secondary_acc", dual.get("secondary_acc"))),
     }
-
 
 def intra_individual_z(history: list[float], current: float) -> float | None:
     """Yıllık takip: kişinin kendi geçmişine göre z-skoru (>=2 önceki kayıt gerekir)."""
