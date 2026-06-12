@@ -8,7 +8,7 @@ böylece kod ile dokümantasyon ayrışamaz.
 
 # ── PVT-B (Basner & Dinges 2011; Dinges & Powell 1985) ──────────
 PVT = {
-    "duration_ms": 180_000,        # 3 dakika sabit süre (deneme sayısı değil)
+    "duration_ms": 30_000,        # 3 dakika sabit süre (deneme sayısı değil) / şu an 30 saniye, gelecekte 3 dakika olabilir
     "isi_min_ms": 2_000,           # ISI 2–8 sn (rastgele, uniform)
     "isi_max_ms": 8_000,
     "lapse_ms": 500,               # lapse eşiği: RT >= 500 ms
@@ -18,7 +18,7 @@ PVT = {
 
 # ── Go/No-Go (Verbruggen & Logan 2008) ───────────────────────────
 GONOGO = {
-    "n_trials": 60,
+    "n_trials": 10,               # toplam deneme sayısı (pratik dahil) / şu an 10, gelecekte 60 olabilir
     "go_ratio": 0.75,              # 45 Go / 15 No-Go (sabit sayı, karıştırılmış)
     "stim_ms": 500,                # uyaran ekranda kalma süresi
     "resp_window_ms": 1_000,       # uyaran başlangıcından itibaren yanıt penceresi
