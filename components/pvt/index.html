@@ -35,7 +35,7 @@
   <div id="msg">Testi başlatmak için butona basın.</div>
   <div id="prog"></div>
 </div>
-<button id="btn" disabled>Pratiğe Başla</button>
+<button id="btn">Pratiğe Başla</button>
 
 <script>
 (function () {
@@ -60,8 +60,6 @@
     if (!e.data.isStreamlitMessage) return;
     if (e.data.type === "streamlit:render") {
       args = e.data.args || {};
-      // Eğer test zaten tamamlandıysa (Streamlit rerun) yeniden başlatma
-      if (!done) init(args);
     }
   });
 
@@ -166,10 +164,7 @@
     });
   }
 
-  function init(_args) {
-    args = _args;          // args'ı garanti altına al
-    btn.disabled = false;
-  }
+
 
   btn.onclick = function () {
     if (started) return;
