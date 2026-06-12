@@ -240,6 +240,19 @@ def view_results():
         pass
 
     st.divider()
+    # Tamamlanmayan testler varsa uyarı + butonlar
+    missing = [s for s in ["pvt", "gonogo", "dual"] if SS.get(f"{s}_result") is None]
+    if missing:
+        st.warning("⚠️ Tüm modüller tamamlanmadı. Eksik testleri yaparak tam rapor oluşturabilirsiniz.")
+        cols = st.columns(len(missing))
+        labels = {"pvt": "▶ PVT", "gonogo": "▶ Go/No-Go", "dual": "▶ Dual Task"}
+        for i, s in enumerate(missing):
+            with cols[i]:
+                if st.button(labels[s], use_container_width=True):
+                    SS.session_saved = False  # raporu sıfırla, yeni kayıt yapılacak
+                    SS.stage = s
+                    st.rerun()
+
     if st.button("🔄 Yeni Aday", use_container_width=True):
         reset_session()
         st.rerun()
