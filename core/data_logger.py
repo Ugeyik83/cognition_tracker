@@ -67,6 +67,10 @@ def load_all() -> pd.DataFrame:
         return pd.DataFrame()
     df = pd.concat(frames, ignore_index=True)
     df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
+    
+    if "candidate_id" in df.columns:
+        df["candidate_id"] = df["candidate_id"].astype(str)
+    
     for c in NUMERIC_COLS:
         if c in df.columns:
             df[c] = pd.to_numeric(df[c], errors="coerce")

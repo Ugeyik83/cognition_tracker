@@ -290,7 +290,7 @@ def view_admin():
         )
 
         st.markdown("#### 📈 Operatör Trend")
-        kandidatlar = sorted(df["candidate_id"].dropna().unique().tolist())
+        kandidatlar = sorted(df["candidate_id"].dropna().astype(str).unique().tolist())
         if not kandidatlar:
             st.info("Henüz operatör kaydı yok.")
         else:
