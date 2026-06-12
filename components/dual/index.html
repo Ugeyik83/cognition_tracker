@@ -117,7 +117,7 @@
       curShape = { shape: isCircle ? "circle" : "square", t0: performance.now(), answered: false };
       shapeBox.textContent = isCircle ? "●" : "■";
       clearTimeout(shapeHideTimer);
-      shapeHideTimer = setTimeout(function () { shapeBox.textContent = "·"; }, cfg("shape_vis", 1500));
+      shapeHideTimer = setTimeout(function () { shapeBox.textContent = "+"; }, cfg("shape_vis", 1500));
       setTimeout(function () {
         if (curShape && !curShape.answered) {
           if (mode === "dual")
@@ -160,7 +160,7 @@
 
   function startBlock(m, durMs, label, withShapes) {
     mode = m; phaseEl.textContent = label;
-    curColor = null; curShape = null; shapeBox.textContent = "·";
+    curColor = null; curShape = null; shapeBox.textContent = "+";
     clearInterval(colorTimer); clearTimeout(shapeTimer); clearTimeout(shapeHideTimer);
     colorTimer = setInterval(colorTick, cfg("color_interval", 1800)); colorTick();
     if (withShapes) scheduleShape();
@@ -190,7 +190,7 @@
 
     } else {
       mode = null; done = true;
-      colorBox.style.background = "#555"; shapeBox.textContent = "·";
+      colorBox.style.background = "#555"; shapeBox.textContent = "+";
       msg.textContent = "Sonuçlar kaydediliyor…"; prog.textContent = "";
       sendValue({
         run_id: cfg("run_id", "x"), test: "dual",
