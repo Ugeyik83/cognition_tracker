@@ -199,8 +199,8 @@ Yönetici Paneli → Plotly trend grafikleri
 
 **İkincil görev (aralıklı):** Şekil tanıma
 - Rastgele aralıklarla (2–4.5 sn) daire (●) veya kare (■) çıkıyor
-- Daire → ← sol ok tuşu
-- Kare → → sağ ok tuşu
+- Daire  ← sol ok tuşu
+- Kare   → sağ ok tuşu
 - 1.5 sn görünür, 2 sn yanıt penceresi
 
 **Blok yapısı:**
