@@ -4,6 +4,7 @@
 
 Yıllık bilişsel yeterlilik taraması için bilimsel temelli, tarayıcı tabanlı değerlendirme bataryası. Üç standardize edilmiş nöropsikolojik test içerir: PVT-B, Go/No-Go ve Dual Task. Streamlit Cloud üzerinde çalışır; kurulum gerektirmez.
 
+[![Streamlit App](https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit&logoColor=white)](https://cognitiontracker.streamlit.app/)
 ---
 
 ## İçindekiler
