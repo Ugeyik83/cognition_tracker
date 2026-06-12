@@ -129,9 +129,6 @@ def view_test(stage: str):
         raw = comp_fn(run_id)   # declare_component tamamlanınca dict, öncesinde None döner
 
         if raw is not None:
-            if raw.get("run_id") != run_id:
-                st.warning("Beklenmeyen run_id. Sayfayı yenileyin.")
-                return
             scored = scorer(raw)
             if scored.get("valid"):
                 SS[result_key] = scored

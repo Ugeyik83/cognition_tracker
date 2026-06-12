@@ -35,7 +35,7 @@
   <div id="msg">Testi başlatmak için butona basın.</div>
   <div id="prog"></div>
 </div>
-<button id="btn">Pratiğe Başla</button>
+<button id="btn" disabled>Pratiğe Başla</button>
 
 <script>
 (function () {
@@ -139,7 +139,7 @@
 
   function startMain() {
     mode = "main"; trials = [];
-    phaseEl.textContent = "ANA BLOK · 3 DAKİKA";
+    phaseEl.textContent = "ANA BLOK · " + Math.round(durMs() / 1000) + " SN";
     msg.textContent = "Ana blok başladı. Kırmızıyı görünce hemen tıklayın.";
     blockEnd = performance.now() + durMs();
     clockTimer = setInterval(function () {
@@ -167,7 +167,7 @@
   }
 
   function init(_args) {
-    // bekleme: Streamlit args geldikten sonra btn aktif
+    args = _args;          // args'ı garanti altına al
     btn.disabled = false;
   }
 

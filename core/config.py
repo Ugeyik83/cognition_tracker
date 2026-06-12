@@ -8,8 +8,7 @@ böylece kod ile dokümantasyon ayrışamaz.
 
 # ── PVT-B (Basner & Dinges 2011; Dinges & Powell 1985) ──────────
 PVT = {
-    "duration_ms": 30_000, 
-                  # 3 dakika sabit süre (deneme sayısı değil) / şu an 30 saniye, gelecekte 3 dakika olabilir
+    "duration_ms": 30_000,         # 3 dakika sabit süre (deneme sayısı değil) / şu an 30 saniye, gelecekte 3 dakika olabilir
     "isi_min_ms": 2_000,           # ISI 2–8 sn (rastgele, uniform)
     "isi_max_ms": 8_000,
     "lapse_ms": 500,               # lapse eşiği: RT >= 500 ms
