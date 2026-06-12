@@ -85,11 +85,10 @@
 
   function cfg(k, def) { return (args && args[k] != null) ? args[k] : def; }
 
-  /* Renk, şekil, blok verileri */
-  var mode = null;   // "practice"|"baseline"|"dual"
+  var mode = null;
   var baselineColor = [], dualColor = [], dualShape = [];
-  var curColor = null;  // {is_target, t0, responded, rt}
-  var curShape = null;  // {shape, t0, answered}
+  var curColor = null;
+  var curShape = null;
   var colorTimer = null, shapeTimer = null, shapeHideTimer = null;
   var blockEnd = 0, clockTimer = null;
 
@@ -119,7 +118,6 @@
       shapeBox.textContent = isCircle ? "●" : "■";
       clearTimeout(shapeHideTimer);
       shapeHideTimer = setTimeout(function () { shapeBox.textContent = "·"; }, cfg("shape_vis", 1500));
-      /* Yanıt penceresi dolunca = miss */
       setTimeout(function () {
         if (curShape && !curShape.answered) {
           if (mode === "dual")
@@ -133,6 +131,7 @@
 
   window.addEventListener("keydown", function (e) {
     if (!mode) return;
+
     if (e.code === "Space") {
       e.preventDefault();
       if (curColor && !curColor.responded) {
@@ -142,11 +141,13 @@
           msg.textContent = curColor.is_target ? "✓ Renk doğru" : "✗ Turuncu değildi";
       }
     }
-    var k = e.key.toLowerCase();
-    if (k === "d" || k === "k") {
+
+    var k = e.key;
+    if (k === "ArrowLeft" || k === "ArrowRight") {
+      e.preventDefault();
       if (curShape && !curShape.answered) {
         curShape.answered = true;
-        var ok = (k === "ArrowLeft" && curShape.shape === "circle") ||
+        var ok = (k === "ArrowLeft"  && curShape.shape === "circle") ||
                  (k === "ArrowRight" && curShape.shape === "square");
         var rec = { shape: curShape.shape, key: k, correct: ok,
                     rt: Math.round(performance.now() - curShape.t0) };
@@ -176,12 +177,17 @@
     clearInterval(clockTimer); clearInterval(colorTimer);
     clearTimeout(shapeTimer); clearTimeout(shapeHideTimer);
     if (curColor && mode !== "practice") pushColor(curColor);
+
     if (mode === "practice") {
-      msg.textContent = "Baseline: YALNIZ renk görevi (30 sn). Karşılaştırma için gerekli.";
-      startBlock("baseline", cfg("baseline_ms", 30000), "BASELINE · TEK GÖREV", false);
+      var baseSn = Math.round(cfg("baseline_ms", 15000) / 1000);
+      msg.textContent = "Baseline: YALNIZ renk görevi (" + baseSn + " sn). Karşılaştırma için gerekli.";
+      startBlock("baseline", cfg("baseline_ms", 15000), "BASELINE · " + baseSn + " SN", false);
+
     } else if (mode === "baseline") {
-      msg.textContent = "Çift görev başladı: iki kutuyu da izleyin (90 sn).";
-      startBlock("dual", cfg("dual_ms", 90000), "ÇİFT GÖREV · 90 SN", true);
+      var dualSn = Math.round(cfg("dual_ms", 30000) / 1000);
+      msg.textContent = "Çift görev başladı: iki kutuyu da izleyin (" + dualSn + " sn).";
+      startBlock("dual", cfg("dual_ms", 30000), "ÇİFT GÖREV · " + dualSn + " SN", true);
+
     } else {
       mode = null; done = true;
       colorBox.style.background = "#555"; shapeBox.textContent = "·";
@@ -196,8 +202,9 @@
 
   btn.onclick = function () {
     if (started) return; started = true; btn.disabled = true;
-    msg.textContent = "Pratik: turuncu→SPACE, ● için ←, ■ için → (geri bildirimli).";
-    startBlock("practice", cfg("practice_ms", 10000), "PRATİK · " + Math.round(cfg("practice_ms", 10000)/1000) + " SN", true);
+    var pracSn = Math.round(cfg("practice_ms", 10000) / 1000);
+    msg.textContent = "Pratik: turuncu→SPACE, ●- ← Sol ok, ■- → Sağ ok (geri bildirimli).";
+    startBlock("practice", cfg("practice_ms", 10000), "PRATİK · " + pracSn + " SN", true);
   };
 
   ready();
