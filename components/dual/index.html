@@ -48,7 +48,7 @@
     <div class="panel">
       <div class="panel-label">ŞEKİL (aralıklı)</div>
       <div id="shapeBox">·</div>
-      <div class="hint">● → <kbd>D</kbd> · ■ → <kbd>K</kbd></div>
+      <div class="hint">● → <kbd>←</kbd> · ■ → <kbd>→</kbd></div>
     </div>
   </div>
   <div id="msg">Testi başlatmak için butona basın.</div>
@@ -146,12 +146,12 @@
     if (k === "d" || k === "k") {
       if (curShape && !curShape.answered) {
         curShape.answered = true;
-        var ok = (k === "d" && curShape.shape === "circle") ||
-                 (k === "k" && curShape.shape === "square");
+        var ok = (k === "ArrowLeft" && curShape.shape === "circle") ||
+                 (k === "ArrowRight" && curShape.shape === "square");
         var rec = { shape: curShape.shape, key: k, correct: ok,
                     rt: Math.round(performance.now() - curShape.t0) };
         if (mode === "dual") dualShape.push(rec);
-        if (mode === "practice") msg.textContent = ok ? "✓ Şekil doğru" : "✗ Yanlış tuş";
+        if (mode === "practice") msg.textContent = ok ? "✓ Doğru" : "✗ Yanlış yön";
         curShape = null;
       }
     }
