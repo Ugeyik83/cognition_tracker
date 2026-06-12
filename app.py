@@ -87,16 +87,38 @@ def view_welcome():
         consent = st.checkbox(
             "Aydınlatma metnini okudum; verilerimin işlenmesine **açık rıza** veriyorum."
         )
-        if st.form_submit_button("Taramaya Başla →", use_container_width=True, type="primary"):
+
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            pvt_btn  = st.form_submit_button("▶ PVT",        use_container_width=True)
+        with col2:
+            gng_btn  = st.form_submit_button("▶ Go/No-Go",   use_container_width=True)
+        with col3:
+            dual_btn = st.form_submit_button("▶ Dual Task",  use_container_width=True)
+
+        full_btn = st.form_submit_button("Baştan Başla →", use_container_width=True, type="primary")
+
+        def validate():
             if not cid.strip():
                 st.error("Operatör ID zorunludur.")
-            elif not consent:
+                return False
+            if not consent:
                 st.error("Açık rıza olmadan teste başlanamaz (KVKK Md. 6).")
-            else:
-                SS.candidate_id = cid.strip()
-                SS.consent_given = True
-                SS.stage = "pvt"
-                st.rerun()
+                return False
+            return True
+
+        if pvt_btn and validate():
+            SS.candidate_id = cid.strip(); SS.consent_given = True
+            SS.stage = "pvt"; st.rerun()
+        if gng_btn and validate():
+            SS.candidate_id = cid.strip(); SS.consent_given = True
+            SS.stage = "gonogo"; st.rerun()
+        if dual_btn and validate():
+            SS.candidate_id = cid.strip(); SS.consent_given = True
+            SS.stage = "dual"; st.rerun()
+        if full_btn and validate():
+            SS.candidate_id = cid.strip(); SS.consent_given = True
+            SS.stage = "pvt"; st.rerun()
 
     st.divider()
     with st.expander("🔐 Yönetici Paneli"):
