@@ -48,7 +48,7 @@
     <div class="panel">
       <div class="panel-label">ŞEKİL (aralıklı)</div>
       <div id="shapeBox">·</div>
-      <div class="hint">● → <kbd>←</kbd> · ■ → <kbd>→</kbd></div>
+      <div class="hint">● - <kbd>←</kbd> · ■ - <kbd>→</kbd></div>
     </div>
   </div>
   <div id="msg">Testi başlatmak için butona basın.</div>
@@ -196,8 +196,8 @@
 
   btn.onclick = function () {
     if (started) return; started = true; btn.disabled = true;
-    msg.textContent = "Pratik: turuncu→SPACE, ●→D, ■→K (geri bildirimli).";
-    startBlock("practice", cfg("practice_ms", 15000), "PRATİK · 15 SN", true);
+    msg.textContent = "Pratik: turuncu→SPACE, ● için ←, ■ için → (geri bildirimli).";
+    startBlock("practice", cfg("practice_ms", 10000), "PRATİK · " + Math.round(cfg("practice_ms", 10000)/1000) + " SN", true);
   };
 
   ready();
