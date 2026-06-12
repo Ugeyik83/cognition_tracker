@@ -30,7 +30,7 @@
   <div id="phase">PVT — PSİKOMOTOR VİJİLANS</div>
   <div id="stim">Hazır olun…</div>
   <div style="margin-top:8px;font-size:12px;color:#8B95B0">
-    Kırmızıyı görünce kutuya tıklayın / dokunun. Erken tıklamayın.
+    Kırmızıyı görünce <kbd>SPACE</kbd> tuşuna basın. Erken basmayın.
   </div>
   <div id="msg">Testi başlatmak için butona basın.</div>
   <div id="prog"></div>
@@ -105,7 +105,9 @@
     else pCount++;
   }
 
-  stim.addEventListener("pointerdown", function () {
+window.addEventListener("keydown", function (e) {
+    if (e.code !== "Space") return;
+    e.preventDefault();
     if (!mode) return;
     if (waiting) {
       clearTimeout(isiTimer);
@@ -121,7 +123,7 @@
       msg.textContent = "Erken basma (" + rt + " ms)";
     } else {
       record(rt, false);
-      msg.textContent = rt + " ms";  // PVT standart geri bildirimi
+      msg.textContent = rt + " ms";
     }
     stim.style.background = "#1F6E4A";
     next();
