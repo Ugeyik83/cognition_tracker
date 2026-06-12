@@ -269,7 +269,27 @@ def view_results():
 # ══ YÖNETİCİ PANELİ ═══════════════════════════════════════════════
 def view_admin():
     header()
+    if st.button("← Ana Sayfa", key="home_admin"):
+        reset_session()
+        st.rerun()
     st.markdown("### 🔐 Yönetici Paneli")
+
+    with st.expander("📖 Metrik Açıklamaları", expanded=False):
+        st.markdown("""
+| Metrik | Açıklama | Normal | Dikkat Bayrağı |
+|---|---|---|---|
+| **PVT Ortalama RT** | Uyarana ortalama reaksiyon süresi (ms). Düşük = iyi. | ≤ 300 ms | > 350 ms |
+| **PVT Lapse** | RT ≥ 500 ms olan deneme sayısı. Uyku yoksunluğu/yorgunluğun en duyarlı göstergesi. | ≤ 5 | > 10 |
+| **PVT Erken Basma** | Uyaran çıkmadan önce veya RT < 100 ms olan basma sayısı. İmpulsivite göstergesi. | ≤ 3 | > 8 |
+| **Go/No-Go İsabet** | Yeşil uyaranda doğru basma oranı. | ≥ %85 | < %75 |
+| **Go/No-Go Yanlış Alarm** | Kırmızı uyaranda yanlış basma oranı. İnhibisyon kontrolü zayıflığı. | ≤ %10 | > %20 |
+| **d′** | Sinyal algılama gücü. Go'yu No-Go'dan ayırt etme kapasitesi. | ≥ 2.5 | < 1.5 |
+| **Dual Birincil** | Renk görevinde doğru yanıt oranı (hit + correct rejection). | ≥ %80 | < %65 |
+| **Dual İkincil** | Şekil görevinde doğru yanıt oranı. | ≥ %70 | < %55 |
+| **Dual-Task Cost** | Baseline − Dual farkı. Çift görev altında performans düşüşü. | — | — |
+        """)
+
+    kandidatlar = []
     try:
         df = load_all()
     except Exception:
@@ -278,11 +298,13 @@ def view_admin():
     if df is None or df.empty:
         st.info("Henüz kayıt yok (veya Streamlit Cloud ephemeral FS sıfırlandı).")
     else:
+        kandidatlar = sorted(df["candidate_id"].dropna().astype(str).unique().tolist())
+
         c1, c2, c3 = st.columns(3)
-        c1.metric("Toplam Oturum",    len(df))
+        c1.metric("Toplam Oturum", len(df))
         c2.metric("Benzersiz Operatör", df["candidate_id"].nunique())
         flagged = int((df["pvt_lapses"] > 10).sum()) if "pvt_lapses" in df.columns else 0
-        c3.metric("Lapse Bayraklı",   flagged)
+        c3.metric("Lapse Bayraklı", flagged)
 
         st.dataframe(df, use_container_width=True, hide_index=True)
         st.download_button(
@@ -290,21 +312,30 @@ def view_admin():
         )
 
         st.markdown("#### 📈 Operatör Trend")
-        kandidatlar = sorted(df["candidate_id"].dropna().astype(str).unique().tolist())
-        if not kandidatlar:
-            st.info("Henüz operatör kaydı yok.")
-        else:
-            cand = st.selectbox("Operatör", kandidatlar)
-
+        st.caption("Seçilen operatörün zaman içindeki değişimi — yıllık takip için kullanın.")
+        cand = st.selectbox("Operatör", kandidatlar)
         metric = st.selectbox("Metrik", [
-            "pvt_mean_rt", "pvt_lapses", "gng_dprime",
-            "dual_primary_acc", "dual_task_cost",
-        ])
+            "pvt_mean_rt", "pvt_lapses", "pvt_false_starts",
+            "gng_hit_rate", "gng_far", "gng_dprime",
+            "dual_primary_acc", "dual_secondary_acc", "dual_task_cost",
+        ], format_func=lambda x: {
+            "pvt_mean_rt":        "PVT Ortalama RT (ms)",
+            "pvt_lapses":         "PVT Lapse sayısı",
+            "pvt_false_starts":   "PVT Erken Basma",
+            "gng_hit_rate":       "Go/No-Go İsabet Oranı",
+            "gng_far":            "Go/No-Go Yanlış Alarm",
+            "gng_dprime":         "Go/No-Go d′",
+            "dual_primary_acc":   "Dual Birincil Doğruluk",
+            "dual_secondary_acc": "Dual İkincil Doğruluk",
+            "dual_task_cost":     "Dual-Task Cost",
+        }[x])
+
         import plotly.express as px
         h = candidate_history(df, cand).dropna(subset=[metric])
         if len(h) >= 2:
             fig = px.line(h, x="timestamp", y=metric, markers=True,
-                          template="plotly_dark", title=f"{cand} — {metric}")
+                          template="plotly_dark",
+                          title=f"{cand} — zaman içi değişim")
             st.plotly_chart(fig, use_container_width=True)
         else:
             st.caption("Trend için en az 2 kayıt gerekir.")
@@ -313,13 +344,16 @@ def view_admin():
     st.markdown("#### 🗑️ Kayıt Sil")
     col_a, col_b = st.columns(2)
     with col_a:
-        sil_aday = st.selectbox("Silinecek operatör", ["— seçin —"] + kandidatlar, key="sil_sec")
-        if st.button("Bu adayı sil", type="secondary"):
-            if sil_aday != "— seçin —":
-                for p in sorted(RESULTS_DIR.glob(f"{sil_aday}_*.csv")):
-                    p.unlink()
-                st.success(f"{sil_aday} silindi.")
-                st.rerun()
+        if kandidatlar:
+            sil_aday = st.selectbox("Silinecek operatör", ["— seçin —"] + kandidatlar, key="sil_sec")
+            if st.button("Bu adayı sil", type="secondary"):
+                if sil_aday != "— seçin —":
+                    for p in sorted(RESULTS_DIR.glob(f"{sil_aday}_*.csv")):
+                        p.unlink()
+                    st.success(f"{sil_aday} silindi.")
+                    st.rerun()
+        else:
+            st.caption("Silinecek kayıt yok.")
     with col_b:
         st.write("")
         st.write("")
@@ -328,10 +362,6 @@ def view_admin():
                 p.unlink()
             st.success("Tüm kayıtlar silindi.")
             st.rerun()
-
-    if st.button("← Çıkış"):
-        SS.stage = "welcome"
-        st.rerun()
 
 
 # ══ ROUTER ════════════════════════════════════════════════════════
