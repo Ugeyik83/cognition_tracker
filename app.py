@@ -26,11 +26,6 @@ st.set_page_config(
 )
 inject_css()
 
-# Her sayfada ana sayfa butonu (results ve admin hariç zaten var)
-if SS.stage not in ("welcome",):
-    if st.sidebar.button("🏠 Ana Sayfa"):
-        reset_session()
-        st.rerun()
 
 # ── Session state başlatma ────────────────────────────────────────
 DEFAULTS = {
